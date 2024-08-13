@@ -7,7 +7,8 @@
 ; x <address>
 ; x/10b <address>
 ; r - set = uppercase
-; sreg
+; sreg, creg
+; page 0
 
 ; address = segment * 16 + offset
 
@@ -26,9 +27,9 @@ mov es, ax
 mov bx, 0
 
 mov ah, 2
-mov al, 8 ; number of sectors to read
+mov al, 32 ; number of sectors to read
 mov ch, 0
-mov cl, 2 ; from sector 2
+mov cl, 2  ; from sector 2
 mov dh, 0
 ; DL already contains the boot drive number
 int 13h
