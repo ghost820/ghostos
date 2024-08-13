@@ -11,6 +11,9 @@
 
 ; address = segment * 16 + offset
 
+; Every instruction uses some default segment register
+; cs, ds, es, ss in 64-bit mode are always 0
+
 ; CS = 0x07C0, IP = 0x0000
 ; OR
 ; CS = 0x0000, IP = 0x7C00
