@@ -54,10 +54,54 @@ jmp dword 0x8:(0x20000+start64)
 start64:
 [bits 64]
 
-lea rax, [0xb8000]
-mov dword [rax], 0x41414141
+mov ax, 0x10
+mov ds, ax
+mov es, ax
+mov ss, ax
 
-jmp $
+; lea rax, [0xb8000]
+; mov dword [rax], 0x41414141
+
+; jmp $
+
+loader:
+mov rsi, [0x20000 + kernel + 0x20] ; e_phoff
+add rsi, 0x20000 + kernel
+movzx ecx, word [0x20000 + kernel + 0x38] ; e_phnum
+cld
+.ph_loop: ; local to loader
+    mov eax, [rsi + 0x00]
+    cmp eax, 1 ; p_type != PT_LOAD
+    jne .next
+
+    mov r8, [rsi + 0x08] ; p_offset
+    mov r9, [rsi + 0x10] ; p_vaddr
+    mov r10, [rsi + 0x20] ; p_filesz
+
+    ; Backup
+    mov rbp, rsi
+    mov r15, rcx
+
+    ; Copy segment
+    lea rsi, [0x20000 + kernel + r8d]
+    mov rdi, r9
+    mov rcx, r10
+    rep movsb
+
+    ; Restore
+    mov rcx, r15
+    mov rsi, rbp
+.next:
+add rsi, 0x20 ; sizeof(Elf64_Phdr)
+loop .ph_loop
+
+; Fix stack
+mov rsp, 0x30F000
+
+; Jump to EP
+mov rax, [0x20000 + kernel + 0x18]
+add rax, 0x20000 + kernel
+call rax
 
 GDT_addr:
     dw (GDT_end - GDT) - 1 ; Size bitmask if number of segments is power of 2
@@ -108,6 +152,10 @@ PDPTE:
     dq 1 | (1 << 1) | (1 << 7)
     times 511 dq 0
 
+times (512 - ($ - $$) % 512) db 0
+
 %if ($ - $$) > 16384
     %fatal "Bootloader code exceeds 16384 bytes."
 %endif
+
+kernel:

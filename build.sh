@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+
+if [ "$1" == "build" ]; then
+    nasm stage1.asm -o stage1.bin
+    nasm stage2.asm -o stage2.bin
+    gcc kernel.c -o kernel.bin -nostdlib
+    strip kernel.bin
+    if [ $(stat -c %s kernel.bin) -gt 16384 ]; then
+        echo "Kernel code exceeds 16384 bytes." >&2
+        exit 1
+    fi
+    cat stage1.bin stage2.bin kernel.bin > os.bin
+    exit 0
+fi
+
+if [ "$1" == "run" ]; then
+    bochs -f bochsrc
+    exit 0
+fi
+
+if [ "$1" == "clean" ]; then
+    rm *.bin
+    rm *.log
+    exit 0
+fi

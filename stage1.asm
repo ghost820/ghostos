@@ -2,11 +2,13 @@
 [org 0x7C00]
 
 ; bochs -f <config>
+; jmp $ + Ctrl + C
 ; b <address>
 ; c
 ; x <address>
 ; x/10b <address>
-; r - set = uppercase
+; u <address>
+; regs - set = uppercase
 ; sreg, creg
 ; page 0
 
@@ -27,7 +29,7 @@ mov es, ax
 mov bx, 0
 
 mov ah, 2
-mov al, 32 ; number of sectors to read
+mov al, 64 ; number of sectors to read
 mov ch, 0
 mov cl, 2  ; from sector 2
 mov dh, 0
