@@ -5,7 +5,7 @@ set -e
 if [ "$1" == "build" ]; then
     nasm stage1.asm -o stage1.bin
     nasm stage2.asm -o stage2.bin
-    gcc kernel.c -o kernel.bin -nostdlib
+    clang kernel.c -o kernel.bin -nostdlib -Weverything
     strip kernel.bin
     if [ $(stat -c %s kernel.bin) -gt 16384 ]; then
         echo "Kernel code exceeds 16384 bytes." >&2

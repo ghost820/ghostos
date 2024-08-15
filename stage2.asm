@@ -1,6 +1,15 @@
 [bits 16]
 [org 0x0000]
 
+; Enable A20
+mov ax, 0x2401
+int 0x15
+
+; Alternate way to enable A20
+in al, 0x92
+or al, 2
+out 0x92, al
+
 mov ax, 0x2000
 mov ds, ax
 mov es, ax
@@ -77,10 +86,17 @@ cld
     mov r8, [rsi + 0x08] ; p_offset
     mov r9, [rsi + 0x10] ; p_vaddr
     mov r10, [rsi + 0x20] ; p_filesz
+    mov r11, [rsi + 0x28] ; p_memsz
 
     ; Backup
     mov rbp, rsi
     mov r15, rcx
+
+    ; Zero memory
+    mov rdi, r9
+    mov rcx, r11
+    xor al, al
+    rep stosb
 
     ; Copy segment
     lea rsi, [0x20000 + kernel + r8d]
@@ -92,7 +108,7 @@ cld
     mov rcx, r15
     mov rsi, rbp
 .next:
-add rsi, 0x20 ; sizeof(Elf64_Phdr)
+add rsi, 0x38 ; sizeof(Elf64_Phdr)
 loop .ph_loop
 
 ; Fix stack
@@ -141,21 +157,27 @@ GDT64:
     dd 0, 0
 GDT64_end:
 
-; Page tables
+; Page tables (1GB mapped, 2MB pages)
 times (4096 - ($ - $$) % 4096) db 0
 PML4:
-    dq 1 | (1 << 1) | (PDPTE - $$ + 0x20000)
+    dq 1 | (1 << 1) | (PDPT - $$ + 0x20000)
     times 511 dq 0
 
-; Assume: aligned to 4KB
-PDPTE:
-    dq 1 | (1 << 1) | (1 << 7)
+PDPT:
+    dq 1 | (1 << 1) | (PDT - $$ + 0x20000)
     times 511 dq 0
+
+PDT:
+%assign i 0
+%rep 512
+    dq 0x200000 * i + 0x83
+    %assign i i+1
+%endrep
 
 times (512 - ($ - $$) % 512) db 0
 
-%if ($ - $$) > 16384
-    %fatal "Bootloader code exceeds 16384 bytes."
+%if ($ - $$) > 20480
+    %fatal "Bootloader code exceeds 20480 bytes."
 %endif
 
 kernel:

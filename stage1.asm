@@ -2,6 +2,7 @@
 [org 0x7C00]
 
 ; bochs -f <config>
+; xchg bx, bx - breakpoint
 ; jmp $ + Ctrl + C
 ; b <address>
 ; c
@@ -17,6 +18,8 @@
 ; Every instruction uses some default segment register
 ; cs, ds, es, ss in 64-bit mode are always 0
 
+cli
+
 ; CS = 0x07C0, IP = 0x0000
 ; OR
 ; CS = 0x0000, IP = 0x7C00
@@ -29,7 +32,7 @@ mov es, ax
 mov bx, 0
 
 mov ah, 2
-mov al, 64 ; number of sectors to read
+mov al, 72 ; number of sectors to read, max 72
 mov ch, 0
 mov cl, 2  ; from sector 2
 mov dh, 0
