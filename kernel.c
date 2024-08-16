@@ -1,7 +1,8 @@
-_Noreturn void _start(void) {
-    short* VRAM = (short*)0xB8000;
+#include "src/console.h"
 
-    VRAM[0] = 0x4141;
+_Noreturn void _start(void) {
+    ClearScreen();
+    Print("GhostOS");
 
     while (1);
 }
