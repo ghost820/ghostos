@@ -1,5 +1,7 @@
 #include "console.h"
 
+#include <stdarg.h>
+
 #include "hal.h"
 
 #define CONSOLE_WIDTH 80
@@ -44,10 +46,55 @@ void PutChar(char c) {
     SetCursorPosition(x, y);
 }
 
-void Print(const char* str) {
+void Print(const char* str, ...) {
+    va_list args;
+    va_start(args, str);
+
     for (; *str != '\0'; str++) {
-        PutChar(*str);
+        if (*str != '%') {
+            PutChar(*str);
+            continue;
+        }
+
+        switch(*++str) {
+            case '%':
+                PutChar('%');
+                break;
+            
+            case 'd': {
+                int64_t n = va_arg(args, int64_t);
+                
+                if (n < 0) {
+                    PutChar('-');
+                    n = -n;
+                }
+
+                char buf[16];
+                int i = 0;
+                do {
+                    buf[i++] = '0' + n % 10;
+                    n /= 10;
+                } while (n > 0);
+
+                for (i--; i >= 0; i--) {
+                    PutChar(buf[i]);
+                }
+                break;
+            }
+
+            case 'c':
+                PutChar(va_arg(args, int));
+                break;
+
+            case 's':
+                for (const char* s = va_arg(args, const char*); *s != '\0'; s++) {
+                    PutChar(*s);
+                }
+                break;
+        }
     }
+
+    va_end(args);
 }
 
 void SetCursorPosition(int x, int y) {
