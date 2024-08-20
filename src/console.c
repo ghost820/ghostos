@@ -2,6 +2,7 @@
 
 #include <stdarg.h>
 
+#include "memory.h"
 #include "hal.h"
 
 #define CONSOLE_WIDTH 80
@@ -15,6 +16,10 @@ static ConsoleCtx_t ConsoleCtx;
 
 void PutChar(char c) {
     char* VRAM = (char*)0xB8000;
+
+    if (ConsoleCtx.y == CONSOLE_HEIGHT) {
+        ScrollLine();
+    }
 
     int x = ConsoleCtx.x;
     int y = ConsoleCtx.y;
@@ -60,10 +65,10 @@ void Print(const char* str, ...) {
             case '%':
                 PutChar('%');
                 break;
-            
+
             case 'd': {
                 int64_t n = va_arg(args, int64_t);
-                
+
                 if (n < 0) {
                     PutChar('-');
                     n = -n;
@@ -95,6 +100,20 @@ void Print(const char* str, ...) {
     }
 
     va_end(args);
+}
+
+void ScrollLine(void) {
+    char* VRAM = (char*)0xB8000;
+
+    memmove(VRAM, VRAM + CONSOLE_WIDTH * 2, CONSOLE_WIDTH * (CONSOLE_HEIGHT - 1) * 2);
+    int i = CONSOLE_WIDTH * (CONSOLE_HEIGHT - 1) * 2;
+    while (i < CONSOLE_WIDTH * CONSOLE_HEIGHT * 2) {
+        VRAM[i + 0] = ' ';
+        VRAM[i + 1] = 0x07;
+        i += 2;
+    }
+
+    SetCursorPosition(0, CONSOLE_HEIGHT - 1);
 }
 
 void SetCursorPosition(int x, int y) {
