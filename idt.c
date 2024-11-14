@@ -1,9 +1,21 @@
 #include "idt.h"
 
-InterruptDescriptor32 IDT[512];
+#include "hal.h"
+
+extern void int20h(void);
+extern void int21h(void);
+extern void intdh(void);
+
+InterruptDescriptor32 IDT[IDT_SIZE];
 InterruptDescriptor32Ptr IDTPtr;
 
 void IDTInit(void) {
+    for (int i = 0; i < IDT_SIZE; i++) {
+        IDTSet(i, intdh);
+    }
+    IDTSet(0x20, int20h); // Timer
+    IDTSet(0x21, int21h); // Keyboard
+
     IDTPtr.limit = sizeof(IDT) - 1;
     IDTPtr.base = (uint32_t)IDT;
     IDTSetIDTR(&IDTPtr);
@@ -19,4 +31,19 @@ void IDTSet(int no, void* addr) {
     */
     IDT[no].type_attributes = 0x8e;
     IDT[no].offset_2 = (uint32_t)addr >> 16;
+}
+
+void int20h_handler(void) {
+    // Code...
+    PortOutByte(0x20, 0x20);
+}
+
+void int21h_handler(void) {
+    // Code...
+    PortOutByte(0x20, 0x20);
+}
+
+void intdh_handler(void) {
+    // Code...
+    PortOutByte(0x20, 0x20);
 }

@@ -15,6 +15,18 @@ _start:
     mov esp, 0x00200000
     mov ebp, esp
 
+    ; Remap the master PIC to interrupt 0x20
+    mov al, 0x11 ; Init command
+    out 0x20, al
+
+    mov al, 0x20
+    out 0x21, al
+
+    mov al, 0x01 ; Mode ICW4
+    out 0x21, al
+
+    sti
+
     call kmain
 
     jmp $

@@ -2,6 +2,8 @@
 
 #include "types.h"
 
+#define IDT_SIZE 512
+
 typedef struct __attribute__((packed)) {
    uint16_t offset_1;
    uint16_t selector;
