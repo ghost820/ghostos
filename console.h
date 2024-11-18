@@ -21,6 +21,7 @@ typedef enum {
     CONSOLE_WHITE
 } ConsoleColor;
 
+void ConsoleInit(void);
 void PutChar(char c);
 void PutCharC(ConsoleColor color, char c);
 void Print(const char* str, ...);

@@ -18,14 +18,14 @@ all: init build/bootloader.bin build/kernel.bin
 	truncate -s 51712 build/ghostos.bin
 
 run: all
-	qemu-system-x86_64 -hda build/ghostos.bin
+	qemu-system-i386 -hda build/ghostos.bin
 
 debug: all
 	gdb \
 		-ex "set confirm off" \
 		-ex "add-symbol-file build/kernel.tmp.o 0x100000" \
 		-ex "break _start" \
-		-ex "target remote | qemu-system-x86_64 -hda build/ghostos.bin -S -gdb stdio" \
+		-ex "target remote | qemu-system-i386 -hda build/ghostos.bin -S -gdb stdio" \
 		-ex "continue"
 
 clean:
@@ -35,8 +35,8 @@ init:
 	mkdir -p build
 
 # Order of the files is important
-build/kernel.bin: build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/console.o
-	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/console.o -o build/kernel.tmp.o
+build/kernel.bin: build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/console.o
+	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/console.o -o build/kernel.tmp.o
 	i686-elf-gcc $(FLAGS) -T linker.ld build/kernel.tmp.o -o build/kernel.bin -static-libgcc -lgcc
 
 build/kernel.o: kernel.c
@@ -56,6 +56,9 @@ build/hal.o: hal.c
 
 build/memory.o: memory.c
 	i686-elf-gcc $(FLAGS) -c memory.c -o build/memory.o
+
+build/heap.o: heap.c
+	i686-elf-gcc $(FLAGS) -c heap.c -o build/heap.o
 
 build/console.o: console.c
 	i686-elf-gcc $(FLAGS) -c console.c -o build/console.o

@@ -18,5 +18,7 @@ typedef struct __attribute__((packed)) {
 } InterruptDescriptor32Ptr;
 
 void IDTInit(void);
+extern void EnableInterrupts(void);
+extern void DisableInterrupts(void);
 extern void IDTSetIDTR(InterruptDescriptor32Ptr* addr);
 void IDTSet(int no, void* addr);

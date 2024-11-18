@@ -1,5 +1,7 @@
 section .asm
 
+global EnableInterrupts
+global DisableInterrupts
 global IDTSetIDTR
 global int20h
 global int21h
@@ -8,6 +10,14 @@ global intdh
 extern int20h_handler
 extern int21h_handler
 extern intdh_handler
+
+EnableInterrupts:
+    sti
+    ret
+
+DisableInterrupts:
+    cli
+    ret
 
 IDTSetIDTR:
     push ebp

@@ -25,8 +25,6 @@ _start:
     mov al, 0x01 ; Mode ICW4
     out 0x21, al
 
-    sti
-
     call kmain
 
     jmp $

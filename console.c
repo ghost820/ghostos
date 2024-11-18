@@ -14,6 +14,11 @@ typedef struct {
 } ConsoleCtx_t;
 static ConsoleCtx_t ConsoleCtx;
 
+void ConsoleInit(void) {
+    ConsoleCtx.x = 0;
+    ConsoleCtx.y = 0;
+}
+
 void PutChar(char c) {
     PutCharC(CONSOLE_WHITE, c);
 }
@@ -71,7 +76,7 @@ void Print(const char* str, ...) {
                 break;
 
             case 'd': {
-                int64_t n = va_arg(args, int64_t);
+                int32_t n = va_arg(args, int32_t);
 
                 if (n < 0) {
                     PutChar('-');
@@ -122,7 +127,7 @@ void PrintC(ConsoleColor color, const char* str, ...) {
                 break;
 
             case 'd': {
-                int64_t n = va_arg(args, int64_t);
+                int32_t n = va_arg(args, int32_t);
 
                 if (n < 0) {
                     PutCharC(color, '-');
