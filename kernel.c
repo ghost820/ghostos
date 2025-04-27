@@ -2,13 +2,15 @@
 
 #include "idt.h"
 #include "heap.h"
+#include "paging.h"
 #include "console.h"
 
 void kmain()
 {
     IDTInit();
-    EnableInterrupts();
     HeapInit();
+    EnablePaging();
+    EnableInterrupts();
     ConsoleInit();
 
     ClearScreen();

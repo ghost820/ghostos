@@ -1,5 +1,7 @@
 #include "heap.h"
 
+#include "memory.h"
+
 uint8_t HEAP_TABLE[HEAP_SIZE / HEAP_BLOCK_SIZE];
 
 void HeapInit(void) {
@@ -40,6 +42,14 @@ void* kmalloc(uint32_t size) {
     HEAP_TABLE[startBlockIdx + numOfFreeBlocks - 1] = 0b00000001;
 
     return (void*)(HEAP_ADDR + startBlockIdx * HEAP_BLOCK_SIZE);
+}
+
+void* kzalloc(uint32_t size) {
+    void* mem = kmalloc(size);
+    if (mem) {
+        memset(mem, 0, size);
+    }
+    return mem;
 }
 
 void kfree(void* ptr) {
