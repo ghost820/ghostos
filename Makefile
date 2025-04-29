@@ -11,8 +11,7 @@ all: init build/bootloader.bin build/kernel.bin
 	cat build/bootloader.bin build/kernel.bin > build/ghostos.bin
 	@if [ $$(stat -c '%s' build/ghostos.bin) -gt 51712 ]; then \
 		echo "Kernel code exceeds 51712 bytes." >&2; \
-		echo "Please check bootloader read parameters." >&2; \
-		echo "Please check stack address." >&2; \
+		echo "Please check layout.txt file." >&2; \
 		exit 1; \
 	fi
 	truncate -s 51712 build/ghostos.bin
@@ -35,8 +34,8 @@ init:
 	mkdir -p build
 
 # Order of the files is important
-build/kernel.bin: build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/console.o
-	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/console.o -o build/kernel.tmp.o
+build/kernel.bin: build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/disk.o build/console.o
+	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/disk.o build/console.o -o build/kernel.tmp.o
 	i686-elf-gcc $(FLAGS) -T linker.ld build/kernel.tmp.o -o build/kernel.bin -static-libgcc -lgcc
 
 build/kernel.o: kernel.c
@@ -65,6 +64,9 @@ build/paging.o: paging.c
 
 build/paging.asm.o: paging.asm
 	nasm -f elf $(NFLAGS) paging.asm -o build/paging.asm.o
+
+build/disk.o: disk.c
+	i686-elf-gcc $(FLAGS) -c disk.c -o build/disk.o
 
 build/console.o: console.c
 	i686-elf-gcc $(FLAGS) -c console.c -o build/console.o

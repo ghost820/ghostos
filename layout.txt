@@ -1,0 +1,11 @@
+Kernel address: 0x100000
+Kernel size: 512 (bootsector) + 51200 (100 sectors)
+    - Bootloader (ata_read)
+    - linker.ld (. = 1M)
+    - make all
+    - make debug
+
+Stack address: 0x200000
+
+Heap address: 0x1000000
+Heap size: 100MB
