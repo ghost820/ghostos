@@ -1,5 +1,6 @@
 #include "kernel.h"
 
+#include "gdt.h"
 #include "idt.h"
 #include "heap.h"
 #include "paging.h"
@@ -7,6 +8,7 @@
 
 void kmain()
 {
+    GDTInit();
     IDTInit();
     HeapInit();
     EnablePaging();

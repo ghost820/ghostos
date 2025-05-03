@@ -34,8 +34,8 @@ init:
 	mkdir -p build
 
 # Order of the files is important
-build/kernel.bin: build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/disk.o build/console.o
-	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/disk.o build/console.o -o build/kernel.tmp.o
+build/kernel.bin: build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/disk.o build/console.o
+	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/disk.o build/console.o -o build/kernel.tmp.o
 	i686-elf-gcc $(FLAGS) -T linker.ld build/kernel.tmp.o -o build/kernel.bin -static-libgcc -lgcc
 
 build/kernel.o: kernel.c
@@ -43,6 +43,12 @@ build/kernel.o: kernel.c
 
 build/kernel.asm.o: kernel.asm
 	nasm -f elf $(NFLAGS) kernel.asm -o build/kernel.asm.o
+
+build/gdt.o: gdt.c
+	i686-elf-gcc $(FLAGS) -c gdt.c -o build/gdt.o
+
+build/gdt.asm.o: gdt.asm
+	nasm -f elf $(NFLAGS) gdt.asm -o build/gdt.asm.o
 
 build/idt.o: idt.c
 	i686-elf-gcc $(FLAGS) -c idt.c -o build/idt.o
