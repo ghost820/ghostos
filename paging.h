@@ -7,7 +7,9 @@
 #define PAGING_PRESENT 0b00000001
 
 void EnablePaging(void);
-void SetPageMapping(void* va, void* pa);
+uint32_t* CreatePageDirectory(uint16_t dirFlags, uint16_t pageFlags);
+void SetPageMapping(void* va, void* pa, uint16_t flags);
+void FreePageDirectory(uint32_t* pageDirectory);
 
 uint32_t GetPageDirectoryIndex(void* va);
 uint32_t GetPageTableIndex(void* va);

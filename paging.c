@@ -7,6 +7,14 @@ uint32_t* PAGE_DIRECTORY;
 extern void EnablePagingAsm(uint32_t* directory);
 
 void EnablePaging(void) {
+    PAGE_DIRECTORY = CreatePageDirectory(
+        PAGING_PRESENT | PAGING_READWRITE,
+        PAGING_PRESENT | PAGING_READWRITE
+    );
+    EnablePagingAsm(PAGE_DIRECTORY);
+}
+
+uint32_t* CreatePageDirectory(uint16_t dirFlags, uint16_t pageFlags) {
     uint32_t* directory = kzalloc(1024 * 4);
     uint64_t offset = 0;
     for (int i = 0; i < 1024; i++)
@@ -15,23 +23,28 @@ void EnablePaging(void) {
         for (int j = 0; j < 1024; j++)
         {
             entry[j] = (offset + j * 4096) & 0xfffff000;
-            entry[j] |= PAGING_PRESENT | PAGING_READWRITE;
+            entry[j] |= pageFlags;
         }
         directory[i] = (uint32_t)entry & 0xfffff000;
-        directory[i] |= PAGING_PRESENT | PAGING_READWRITE;
+        directory[i] |= dirFlags;
         offset += 1024 * 4096;
     }
-    
-    EnablePagingAsm(directory);
-
-    PAGE_DIRECTORY = directory;
+    return directory;
 }
 
-void SetPageMapping(void* va, void* pa) {
+void SetPageMapping(void* va, void* pa, uint16_t flags) {
     uint32_t dirIdx = GetPageDirectoryIndex(va);
     uint32_t tblIdx = GetPageTableIndex(va);
     uint32_t* pageTable = (uint32_t*)(PAGE_DIRECTORY[dirIdx] & 0xfffff000);
-    pageTable[tblIdx] = (uint32_t)pa | PAGING_PRESENT | PAGING_READWRITE;
+    pageTable[tblIdx] = (uint32_t)pa | flags;
+}
+
+void FreePageDirectory(uint32_t* pageDirectory) {
+    for (int i = 0; i < 1024; i++) {
+        uint32_t* entry = (uint32_t*)(pageDirectory[i] & 0xfffff000);
+        kfree(entry);
+    }
+    kfree(pageDirectory);
 }
 
 uint32_t GetPageDirectoryIndex(void* va) {
