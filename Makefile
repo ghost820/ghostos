@@ -34,8 +34,8 @@ init:
 	mkdir -p build
 
 # Order of the files is important
-build/kernel.bin: build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/disk.o build/console.o
-	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/disk.o build/console.o -o build/kernel.tmp.o
+build/kernel.bin: build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/tss.o build/tss.asm.o build/disk.o build/console.o
+	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/tss.o build/tss.asm.o build/disk.o build/console.o -o build/kernel.tmp.o
 	i686-elf-gcc $(FLAGS) -T linker.ld build/kernel.tmp.o -o build/kernel.bin -static-libgcc -lgcc
 
 build/kernel.o: kernel.c
@@ -70,6 +70,12 @@ build/paging.o: paging.c
 
 build/paging.asm.o: paging.asm
 	nasm -f elf $(NFLAGS) paging.asm -o build/paging.asm.o
+
+build/tss.o: tss.c
+	i686-elf-gcc $(FLAGS) -c tss.c -o build/tss.o
+
+build/tss.asm.o: tss.asm
+	nasm -f elf $(NFLAGS) tss.asm -o build/tss.asm.o
 
 build/disk.o: disk.c
 	i686-elf-gcc $(FLAGS) -c disk.c -o build/disk.o

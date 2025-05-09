@@ -6,6 +6,7 @@ Kernel size: 512 (bootsector) + 51200 (100 sectors)
     - make debug
 
 Stack address: 0x200000
+TSS Stack address: 0x600000
 
 Heap address: 0x1000000
 Heap size: 100MB
