@@ -13,3 +13,5 @@ void FreePageDirectory(uint32_t* pageDirectory);
 
 uint32_t GetPageDirectoryIndex(void* va);
 uint32_t GetPageTableIndex(void* va);
+
+uint32_t BytesToPages(uint32_t bytes);

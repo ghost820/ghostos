@@ -54,3 +54,7 @@ uint32_t GetPageDirectoryIndex(void* va) {
 uint32_t GetPageTableIndex(void* va) {
     return (uint32_t)va % (1024 * 4096) / 4096;
 }
+
+uint32_t BytesToPages(uint32_t bytes) {
+    return (bytes + 4095) / 4096;
+}

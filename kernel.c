@@ -6,6 +6,7 @@
 #include "heap.h"
 #include "paging.h"
 #include "console.h"
+#include "process.h"
 
 void kmain()
 {
@@ -16,6 +17,7 @@ void kmain()
     EnablePaging();
     EnableInterrupts();
     ConsoleInit();
+    ProcessEnvironmentInit();
 
     ClearScreen();
     Print("GhostOS");
