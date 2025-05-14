@@ -8,6 +8,7 @@
 
 void EnablePaging(void);
 uint32_t* CreatePageDirectory(uint16_t dirFlags, uint16_t pageFlags);
+void SetPageDirectory(uint32_t* pageDirectory);
 void SetPageMapping(void* va, void* pa, uint16_t flags);
 void FreePageDirectory(uint32_t* pageDirectory);
 

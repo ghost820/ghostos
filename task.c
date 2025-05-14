@@ -51,5 +51,16 @@ void TaskFree(Task* task) {
         lastTask = task->prev;
     }
 
+    if (task == currentTask) {
+        currentTask = 0;
+    }
+
     kfree(task);
+}
+
+void SetCurrentTask(Task* task) {
+    // TODO: Check if this should be here
+    SetSegmentRegistersToUser();
+    SetPageDirectory(task->pageDirectory);
+    currentTask = task;
 }

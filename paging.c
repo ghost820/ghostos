@@ -5,6 +5,7 @@
 uint32_t* PAGE_DIRECTORY;
 
 extern void EnablePagingAsm(uint32_t* directory);
+extern void SetPageDirectoryAsm(uint32_t* directory);
 
 void EnablePaging(void) {
     PAGE_DIRECTORY = CreatePageDirectory(
@@ -30,6 +31,11 @@ uint32_t* CreatePageDirectory(uint16_t dirFlags, uint16_t pageFlags) {
         offset += 1024 * 4096;
     }
     return directory;
+}
+
+void SetPageDirectory(uint32_t* pageDirectory) {
+    PAGE_DIRECTORY = pageDirectory;
+    SetPageDirectoryAsm(pageDirectory);
 }
 
 void SetPageMapping(void* va, void* pa, uint16_t flags) {

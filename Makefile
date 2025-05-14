@@ -34,8 +34,8 @@ init:
 	mkdir -p build
 
 # Order of the files is important
-build/kernel.bin: build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/tss.o build/tss.asm.o build/disk.o build/console.o build/task.o build/process.o
-	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/tss.o build/tss.asm.o build/disk.o build/console.o build/task.o build/process.o -o build/kernel.tmp.o
+build/kernel.bin: build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/tss.o build/tss.asm.o build/disk.o build/console.o build/task.o build/task.asm.o build/process.o
+	i686-elf-ld -relocatable $(LDFLAGS) build/kernel.asm.o build/kernel.o build/gdt.o build/gdt.asm.o build/idt.o build/idt.asm.o build/hal.o build/memory.o build/heap.o build/paging.o build/paging.asm.o build/tss.o build/tss.asm.o build/disk.o build/console.o build/task.o build/task.asm.o build/process.o -o build/kernel.tmp.o
 	i686-elf-gcc $(FLAGS) -T linker.ld build/kernel.tmp.o -o build/kernel.bin -static-libgcc -lgcc
 
 build/kernel.o: kernel.c
@@ -85,6 +85,9 @@ build/console.o: console.c
 
 build/task.o: task.c
 	i686-elf-gcc $(FLAGS) -c task.c -o build/task.o
+
+build/task.asm.o: task.asm
+	nasm -f elf $(NFLAGS) task.asm -o build/task.asm.o
 
 build/process.o: process.c
 	i686-elf-gcc $(FLAGS) -c process.c -o build/process.o
