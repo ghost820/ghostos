@@ -60,7 +60,12 @@ Process* ProcessInit(const void* data, uint32_t dataSize) {
     uint8_t* va = (uint8_t*)0x400000;
     uint8_t* pa = (uint8_t*)process->data;
     for (uint32_t i = 0; i < BytesToPages(process->dataSize); i++) {
-        SetPageMapping(va, pa, PAGING_PRESENT | PAGING_USER_SUPERVISOR | PAGING_READWRITE);
+        SetPageMapping(
+            process->mainThread->pageDirectory,
+            va,
+            pa,
+            PAGING_PRESENT | PAGING_USER_SUPERVISOR | PAGING_READWRITE
+        );
         va += 4096;
         pa += 4096;
     }

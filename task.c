@@ -12,6 +12,7 @@ Task* TaskInit(void) {
 
     task->registers.eip = 0x400000;
     task->registers.esp = 0x3ff000;
+    task->registers.cs = 0x1b;
     task->registers.ss = 0x23;
 
     task->pageDirectory = CreatePageDirectory(
@@ -60,7 +61,8 @@ void TaskFree(Task* task) {
 
 void SetCurrentTask(Task* task) {
     // TODO: Check if this should be here
-    SetSegmentRegistersToUser();
+    // SetSegmentRegistersToUser();
     SetPageDirectory(task->pageDirectory);
     currentTask = task;
+    GoToUserMode(&task->registers);
 }

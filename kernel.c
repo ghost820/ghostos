@@ -7,6 +7,7 @@
 #include "paging.h"
 #include "console.h"
 #include "process.h"
+#include "task.h"
 
 void kmain()
 {
@@ -15,10 +16,15 @@ void kmain()
     TSSInit();
     HeapInit();
     EnablePaging();
-    EnableInterrupts();
     ConsoleInit();
     ProcessEnvironmentInit();
 
     ClearScreen();
     Print("GhostOS");
+
+    uint8_t processImage[] = {
+        0xeb, 0xfe
+    };
+    Process* process = ProcessInit(processImage, sizeof(processImage));
+    SetCurrentTask(process->mainThread);
 }

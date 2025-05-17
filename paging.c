@@ -38,10 +38,10 @@ void SetPageDirectory(uint32_t* pageDirectory) {
     SetPageDirectoryAsm(pageDirectory);
 }
 
-void SetPageMapping(void* va, void* pa, uint16_t flags) {
+void SetPageMapping(uint32_t* pageDirectory, void* va, void* pa, uint16_t flags) {
     uint32_t dirIdx = GetPageDirectoryIndex(va);
     uint32_t tblIdx = GetPageTableIndex(va);
-    uint32_t* pageTable = (uint32_t*)(PAGE_DIRECTORY[dirIdx] & 0xfffff000);
+    uint32_t* pageTable = (uint32_t*)(pageDirectory[dirIdx] & 0xfffff000);
     pageTable[tblIdx] = (uint32_t)pa | flags;
 }
 
