@@ -2,16 +2,18 @@
 
 #include "heap.h"
 
+uint32_t* PAGE_DIRECTORY_KERNEL;
 uint32_t* PAGE_DIRECTORY;
 
 extern void EnablePagingAsm(uint32_t* directory);
 extern void SetPageDirectoryAsm(uint32_t* directory);
 
 void EnablePaging(void) {
-    PAGE_DIRECTORY = CreatePageDirectory(
+    PAGE_DIRECTORY_KERNEL = CreatePageDirectory(
         PAGING_PRESENT | PAGING_READWRITE,
         PAGING_PRESENT | PAGING_READWRITE
     );
+    PAGE_DIRECTORY = PAGE_DIRECTORY_KERNEL;
     EnablePagingAsm(PAGE_DIRECTORY);
 }
 
@@ -36,6 +38,16 @@ uint32_t* CreatePageDirectory(uint16_t dirFlags, uint16_t pageFlags) {
 void SetPageDirectory(uint32_t* pageDirectory) {
     PAGE_DIRECTORY = pageDirectory;
     SetPageDirectoryAsm(pageDirectory);
+}
+
+PageTableEntry GetPageMapping(uint32_t* pageDirectory, void* va) {
+    uint32_t dirIdx = GetPageDirectoryIndex(va);
+    uint32_t tblIdx = GetPageTableIndex(va);
+    uint32_t* pageTable = (uint32_t*)(pageDirectory[dirIdx] & 0xfffff000);
+    PageTableEntry entry;
+    entry.pa = (void*)(pageTable[tblIdx] & 0xfffff000);
+    entry.flags = pageTable[tblIdx] & 0x00000fff;
+    return entry;
 }
 
 void SetPageMapping(uint32_t* pageDirectory, void* va, void* pa, uint16_t flags) {

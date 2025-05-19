@@ -11,7 +11,13 @@ SECTIONS
     {
         *(.text)
     }
-    
+
+    /* To avoid alignment issues */
+    .asm : ALIGN(4096)
+    {
+        *(.asm)
+    }
+
     .rodata : ALIGN(4096)
     {
         *(.rodata)
@@ -26,11 +32,5 @@ SECTIONS
     {
         *(COMMON)
         *(.bss)
-    }
-
-    /* To avoid alignment issues */
-    .asm : ALIGN(4096)
-    {
-        *(.asm)
     }
 }

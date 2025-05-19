@@ -28,10 +28,16 @@ typedef struct Task {
     struct Task* next;
 } Task;
 
+extern Task* CurrentTask;
+
 Task* TaskInit(void);
 void TaskFree(Task* task);
 void SetCurrentTask(Task* task);
 
+int CopyPageFromTask(Task* task, void* dest, const void* va);
+uint32_t GetStackElement(Task* task, int index);
+
 extern void GoToUserMode(TaskRegisters* registers);
+extern void SetSegmentRegistersToKernel(void);
 extern void SetSegmentRegistersToUser(void);
 extern void SetRegisters(TaskRegisters* registers);

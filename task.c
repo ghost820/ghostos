@@ -1,10 +1,11 @@
 #include "task.h"
 
+#include "memory.h"
 #include "heap.h"
 #include "paging.h"
 
 Task* firstTask;
-Task* currentTask;
+Task* CurrentTask;
 Task* lastTask;
 
 Task* TaskInit(void) {
@@ -52,8 +53,8 @@ void TaskFree(Task* task) {
         lastTask = task->prev;
     }
 
-    if (task == currentTask) {
-        currentTask = 0;
+    if (task == CurrentTask) {
+        CurrentTask = 0;
     }
 
     kfree(task);
@@ -63,6 +64,44 @@ void SetCurrentTask(Task* task) {
     // TODO: Check if this should be here
     // SetSegmentRegistersToUser();
     SetPageDirectory(task->pageDirectory);
-    currentTask = task;
+    CurrentTask = task;
     GoToUserMode(&task->registers);
+}
+
+int CopyPageFromTask(Task* task, void* dest, const void* va) {
+    void* buffer = kmalloc(4096);
+    if (!buffer) {
+        return -1;
+    }
+    if (buffer == va) {
+        kfree(buffer);
+        return -2;
+    }
+
+    PageTableEntry entry = GetPageMapping(task->pageDirectory, buffer);
+    SetPageMapping(task->pageDirectory, buffer, buffer, PAGING_PRESENT | PAGING_READWRITE);
+    SetPageDirectory(task->pageDirectory);
+    memcpy(buffer, va, 4096);
+    SetPageDirectory(PAGE_DIRECTORY_KERNEL);
+    SetPageMapping(task->pageDirectory, buffer, entry.pa, entry.flags);
+
+    memcpy(dest, buffer, 4096);
+
+    kfree(buffer);
+    return 0;
+}
+
+uint32_t GetStackElement(Task* task, int index) {
+    uint32_t result = 0;
+    uint32_t* stack = (uint32_t*)task->registers.esp;
+
+    SetSegmentRegistersToUser();
+    SetPageDirectory(task->pageDirectory);
+
+    result = stack[index];
+
+    SetSegmentRegistersToKernel();
+    SetPageDirectory(PAGE_DIRECTORY_KERNEL);
+
+    return result;
 }

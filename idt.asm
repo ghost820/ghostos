@@ -5,10 +5,12 @@ global DisableInterrupts
 global IDTSetIDTR
 global int20h
 global int21h
+global int80h
 global intdh
 
 extern int20h_handler
 extern int21h_handler
+extern int80h_handler
 extern intdh_handler
 
 EnableInterrupts:
@@ -30,31 +32,42 @@ IDTSetIDTR:
     ret
 
 int20h:
-    cli
     pushad
 
     call int20h_handler
 
     popad
-    sti
     iret
 
 int21h:
-    cli
     pushad
 
     call int21h_handler
 
     popad
-    sti
+    iret
+
+int80h:
+    pushad
+
+    push esp
+    push eax
+    call int80h_handler
+    mov dword [int80h_ret], eax
+    add esp, 8
+
+    popad
+    mov eax, [int80h_ret]
     iret
 
 intdh:
-    cli
     pushad
 
     call intdh_handler
 
     popad
-    sti
     iret
+
+section .data
+
+int80h_ret: dd 0

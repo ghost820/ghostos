@@ -70,5 +70,18 @@ Process* ProcessInit(const void* data, uint32_t dataSize) {
         pa += 4096;
     }
 
+    va = (uint8_t*)(0x3ff000 - PROCESS_STACK_SIZE);
+    pa = (uint8_t*)process->stack;
+    for (uint32_t i = 0; i < BytesToPages(PROCESS_STACK_SIZE); i++) {
+        SetPageMapping(
+            process->mainThread->pageDirectory,
+            va,
+            pa,
+            PAGING_PRESENT | PAGING_USER_SUPERVISOR | PAGING_READWRITE
+        );
+        va += 4096;
+        pa += 4096;
+    }
+
     return process;
 }

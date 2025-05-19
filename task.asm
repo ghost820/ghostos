@@ -1,6 +1,7 @@
 section .asm
 
 global GoToUserMode
+global SetSegmentRegistersToKernel
 global SetSegmentRegistersToUser
 global SetRegisters
 
@@ -30,6 +31,15 @@ GoToUserMode:
     add esp, 4
 
     iretd
+
+SetSegmentRegistersToKernel:
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    ret
 
 SetSegmentRegistersToUser:
     mov ax, 0x23
