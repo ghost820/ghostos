@@ -4,13 +4,17 @@
 
 uint8_t HEAP_TABLE[HEAP_SIZE / HEAP_BLOCK_SIZE];
 
-void HeapInit(void) {
+void
+HeapInit(void)
+{
     for (uint32_t i = 0; i < HEAP_SIZE / HEAP_BLOCK_SIZE; i++) {
         HEAP_TABLE[i] = 0;
     }
 }
 
-void* kmalloc(uint32_t size) {
+void*
+kmalloc(uint32_t size)
+{
     uint32_t allocSize = ((size + HEAP_BLOCK_SIZE - 1) / HEAP_BLOCK_SIZE) * HEAP_BLOCK_SIZE;
 
     uint32_t startBlockIdx = 0xffffffff;
@@ -44,7 +48,9 @@ void* kmalloc(uint32_t size) {
     return (void*)(HEAP_ADDR + startBlockIdx * HEAP_BLOCK_SIZE);
 }
 
-void* kzalloc(uint32_t size) {
+void*
+kzalloc(uint32_t size)
+{
     void* mem = kmalloc(size);
     if (mem) {
         memset(mem, 0, size);
@@ -52,7 +58,9 @@ void* kzalloc(uint32_t size) {
     return mem;
 }
 
-void kfree(void* ptr) {
+void
+kfree(void* ptr)
+{
     uint32_t blockIdx = ((uint32_t)ptr - HEAP_ADDR) / HEAP_BLOCK_SIZE;
     while (1) {
         uint8_t entry = HEAP_TABLE[blockIdx];

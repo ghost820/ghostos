@@ -1,20 +1,26 @@
 #include "memory.h"
 
-void* memset(void* dst, uint8_t c, uint32_t size) {
+void*
+memset(void* dst, uint8_t c, uint32_t size)
+{
     for (uint32_t i = 0; i < size; i++) {
         ((uint8_t*)dst)[i] = c;
     }
     return dst;
 }
 
-void* memcpy(void* dst, const void* src, uint32_t size) {
+void*
+memcpy(void* dst, const void* src, uint32_t size)
+{
     for (uint32_t i = 0; i < size; i++) {
         ((uint8_t*)dst)[i] = ((const uint8_t*)src)[i];
     }
     return dst;
 }
 
-void* memmove(void* dst, const void* src, uint32_t size) {
+void*
+memmove(void* dst, const void* src, uint32_t size)
+{
     if (dst < src) {
         for (uint32_t i = 0; i < size; i++) {
             ((uint8_t*)dst)[i] = ((const uint8_t*)src)[i];

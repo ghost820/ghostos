@@ -4,17 +4,21 @@
 
 uint64_t GDT[6];
 
-void GDTInit(void) {
-    GDT[0] = GDTCreateEntry(0, 0, 0, GDT_BYTES);                       // Null descriptor
-    GDT[1] = GDTCreateEntry(0, 0xffffffff, 0b10011010, GDT_PAGES);     // Code descriptor
-    GDT[2] = GDTCreateEntry(0, 0xffffffff, 0b10010010, GDT_PAGES);     // Data descriptor
-    GDT[3] = GDTCreateEntry(0, 0xffffffff, 0b11111010, GDT_PAGES);     // User code descriptor
-    GDT[4] = GDTCreateEntry(0, 0xffffffff, 0b11110010, GDT_PAGES);     // User data descriptor
+void
+GDTInit(void)
+{
+    GDT[0] = GDTCreateEntry(0, 0, 0, GDT_BYTES); // Null descriptor
+    GDT[1] = GDTCreateEntry(0, 0xffffffff, 0b10011010, GDT_PAGES); // Code descriptor
+    GDT[2] = GDTCreateEntry(0, 0xffffffff, 0b10010010, GDT_PAGES); // Data descriptor
+    GDT[3] = GDTCreateEntry(0, 0xffffffff, 0b11111010, GDT_PAGES); // User code descriptor
+    GDT[4] = GDTCreateEntry(0, 0xffffffff, 0b11110010, GDT_PAGES); // User data descriptor
     GDT[5] = GDTCreateEntry(&tss, sizeof(tss), 0b10001001, GDT_BYTES); // TSS descriptor
     GDTLoad(GDT, sizeof(GDT));
 }
 
-uint64_t GDTCreateEntry(const void* base, uint32_t limit, uint8_t access, GDTUnit unit) {
+uint64_t
+GDTCreateEntry(const void* base, uint32_t limit, uint8_t access, GDTUnit unit)
+{
     uint64_t result = 0;
     uint8_t* resultBytes = (uint8_t*)&result;
 

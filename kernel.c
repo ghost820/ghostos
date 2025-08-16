@@ -1,15 +1,16 @@
 #include "kernel.h"
 
-#include "gdt.h"
-#include "tss.h"
-#include "idt.h"
-#include "heap.h"
-#include "paging.h"
 #include "console.h"
+#include "gdt.h"
+#include "heap.h"
+#include "idt.h"
+#include "paging.h"
 #include "process.h"
 #include "task.h"
+#include "tss.h"
 
-void kmain()
+void
+kmain()
 {
     GDTInit();
     IDTInit();

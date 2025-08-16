@@ -12,7 +12,9 @@ extern void intdh(void);
 InterruptDescriptor32 IDT[IDT_SIZE];
 InterruptDescriptor32Ptr IDTPtr;
 
-void IDTInit(void) {
+void
+IDTInit(void)
+{
     for (int i = 0; i < IDT_SIZE; i++) {
         IDTSet(i, intdh, 0x8e);
     }
@@ -25,7 +27,9 @@ void IDTInit(void) {
     IDTSetIDTR(&IDTPtr);
 }
 
-void IDTSet(int no, void* addr, uint8_t attr) {
+void
+IDTSet(int no, void* addr, uint8_t attr)
+{
     IDT[no].offset_1 = (uint32_t)addr & 0xffff;
     IDT[no].selector = 0x08;
     IDT[no].zero = 0x00;
@@ -37,17 +41,23 @@ void IDTSet(int no, void* addr, uint8_t attr) {
     IDT[no].offset_2 = (uint32_t)addr >> 16;
 }
 
-void int20h_handler(void) {
+void
+int20h_handler(void)
+{
     // Code...
     PortOutByte(0x20, 0x20);
 }
 
-void int21h_handler(void) {
+void
+int21h_handler(void)
+{
     // Code...
     PortOutByte(0x20, 0x20);
 }
 
-void int80h_handler(int command, InterruptFrame* frame) {
+void
+int80h_handler(int command, InterruptFrame* frame)
+{
     SetSegmentRegistersToKernel();
     SetPageDirectory(PAGE_DIRECTORY_KERNEL);
 
@@ -68,7 +78,9 @@ void int80h_handler(int command, InterruptFrame* frame) {
     SetPageDirectory(CurrentTask->pageDirectory);
 }
 
-void intdh_handler(void) {
+void
+intdh_handler(void)
+{
     // Code...
     PortOutByte(0x20, 0x20);
 }

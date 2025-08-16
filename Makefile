@@ -27,6 +27,9 @@ debug: all
 		-ex "target remote | qemu-system-i386 -hda build/ghostos.bin -S -gdb stdio" \
 		-ex "continue"
 
+format:
+	clang-format-18 -i *.h *.c
+
 clean:
 	rm -rf build
 

@@ -2,8 +2,8 @@
 
 #include <stdarg.h>
 
-#include "memory.h"
 #include "hal.h"
+#include "memory.h"
 
 #define CONSOLE_WIDTH 80
 #define CONSOLE_HEIGHT 25
@@ -14,16 +14,22 @@ typedef struct {
 } ConsoleCtx_t;
 static ConsoleCtx_t ConsoleCtx;
 
-void ConsoleInit(void) {
+void
+ConsoleInit(void)
+{
     ConsoleCtx.x = 0;
     ConsoleCtx.y = 0;
 }
 
-void PutChar(char c) {
+void
+PutChar(char c)
+{
     PutCharC(CONSOLE_WHITE, c);
 }
 
-void PutCharC(ConsoleColor color, char c) {
+void
+PutCharC(ConsoleColor color, char c)
+{
     char* VRAM = (char*)0xB8000;
 
     if (ConsoleCtx.y == CONSOLE_HEIGHT) {
@@ -60,7 +66,9 @@ void PutCharC(ConsoleColor color, char c) {
     SetCursorPosition(x, y);
 }
 
-void Print(const char* str, ...) {
+void
+Print(const char* str, ...)
+{
     va_list args;
     va_start(args, str);
 
@@ -70,48 +78,50 @@ void Print(const char* str, ...) {
             continue;
         }
 
-        switch(*++str) {
-            case '%':
-                PutChar('%');
-                break;
+        switch (*++str) {
+        case '%':
+            PutChar('%');
+            break;
 
-            case 'd': {
-                int32_t n = va_arg(args, int32_t);
+        case 'd': {
+            int32_t n = va_arg(args, int32_t);
 
-                if (n < 0) {
-                    PutChar('-');
-                    n = -n;
-                }
-
-                char buf[16];
-                int i = 0;
-                do {
-                    buf[i++] = '0' + n % 10;
-                    n /= 10;
-                } while (n > 0);
-
-                for (i--; i >= 0; i--) {
-                    PutChar(buf[i]);
-                }
-                break;
+            if (n < 0) {
+                PutChar('-');
+                n = -n;
             }
 
-            case 'c':
-                PutChar(va_arg(args, int));
-                break;
+            char buf[16];
+            int i = 0;
+            do {
+                buf[i++] = '0' + n % 10;
+                n /= 10;
+            } while (n > 0);
 
-            case 's':
-                for (const char* s = va_arg(args, const char*); *s != '\0'; s++) {
-                    PutChar(*s);
-                }
-                break;
+            for (i--; i >= 0; i--) {
+                PutChar(buf[i]);
+            }
+            break;
+        }
+
+        case 'c':
+            PutChar(va_arg(args, int));
+            break;
+
+        case 's':
+            for (const char* s = va_arg(args, const char*); *s != '\0'; s++) {
+                PutChar(*s);
+            }
+            break;
         }
     }
 
     va_end(args);
 }
 
-void PrintC(ConsoleColor color, const char* str, ...) {
+void
+PrintC(ConsoleColor color, const char* str, ...)
+{
     va_list args;
     va_start(args, str);
 
@@ -121,48 +131,50 @@ void PrintC(ConsoleColor color, const char* str, ...) {
             continue;
         }
 
-        switch(*++str) {
-            case '%':
-                PutCharC(color, '%');
-                break;
+        switch (*++str) {
+        case '%':
+            PutCharC(color, '%');
+            break;
 
-            case 'd': {
-                int32_t n = va_arg(args, int32_t);
+        case 'd': {
+            int32_t n = va_arg(args, int32_t);
 
-                if (n < 0) {
-                    PutCharC(color, '-');
-                    n = -n;
-                }
-
-                char buf[16];
-                int i = 0;
-                do {
-                    buf[i++] = '0' + n % 10;
-                    n /= 10;
-                } while (n > 0);
-
-                for (i--; i >= 0; i--) {
-                    PutCharC(color, buf[i]);
-                }
-                break;
+            if (n < 0) {
+                PutCharC(color, '-');
+                n = -n;
             }
 
-            case 'c':
-                PutCharC(color, va_arg(args, int));
-                break;
+            char buf[16];
+            int i = 0;
+            do {
+                buf[i++] = '0' + n % 10;
+                n /= 10;
+            } while (n > 0);
 
-            case 's':
-                for (const char* s = va_arg(args, const char*); *s != '\0'; s++) {
-                    PutCharC(color, *s);
-                }
-                break;
+            for (i--; i >= 0; i--) {
+                PutCharC(color, buf[i]);
+            }
+            break;
+        }
+
+        case 'c':
+            PutCharC(color, va_arg(args, int));
+            break;
+
+        case 's':
+            for (const char* s = va_arg(args, const char*); *s != '\0'; s++) {
+                PutCharC(color, *s);
+            }
+            break;
         }
     }
 
     va_end(args);
 }
 
-void ScrollLine(void) {
+void
+ScrollLine(void)
+{
     char* VRAM = (char*)0xB8000;
 
     memmove(VRAM, VRAM + CONSOLE_WIDTH * 2, CONSOLE_WIDTH * (CONSOLE_HEIGHT - 1) * 2);
@@ -176,7 +188,9 @@ void ScrollLine(void) {
     SetCursorPosition(0, CONSOLE_HEIGHT - 1);
 }
 
-void SetCursorPosition(int x, int y) {
+void
+SetCursorPosition(int x, int y)
+{
     ConsoleCtx.x = x;
     ConsoleCtx.y = y;
 
@@ -187,7 +201,9 @@ void SetCursorPosition(int x, int y) {
     PortOutByte(0x3D5, (uint8_t)(offset >> 8));
 }
 
-void ClearScreen(void) {
+void
+ClearScreen(void)
+{
     char* VRAM = (char*)0xB8000;
 
     for (int i = 0; i < CONSOLE_WIDTH * CONSOLE_HEIGHT; i++) {

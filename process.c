@@ -1,18 +1,22 @@
 #include "process.h"
 
-#include "memory.h"
 #include "heap.h"
+#include "memory.h"
 #include "paging.h"
 
 Process* processes[MAX_PROCESSES];
 Process* currentProcess;
 
-void ProcessEnvironmentInit(void) {
+void
+ProcessEnvironmentInit(void)
+{
     memset(processes, 0, sizeof(processes));
     currentProcess = 0;
 }
 
-Process* ProcessInit(const void* data, uint32_t dataSize) {
+Process*
+ProcessInit(const void* data, uint32_t dataSize)
+{
     Process* process = kzalloc(sizeof(Process));
     if (!process) {
         return 0;
@@ -64,8 +68,7 @@ Process* ProcessInit(const void* data, uint32_t dataSize) {
             process->mainThread->pageDirectory,
             va,
             pa,
-            PAGING_PRESENT | PAGING_USER_SUPERVISOR | PAGING_READWRITE
-        );
+            PAGING_PRESENT | PAGING_USER_SUPERVISOR | PAGING_READWRITE);
         va += 4096;
         pa += 4096;
     }
@@ -77,8 +80,7 @@ Process* ProcessInit(const void* data, uint32_t dataSize) {
             process->mainThread->pageDirectory,
             va,
             pa,
-            PAGING_PRESENT | PAGING_USER_SUPERVISOR | PAGING_READWRITE
-        );
+            PAGING_PRESENT | PAGING_USER_SUPERVISOR | PAGING_READWRITE);
         va += 4096;
         pa += 4096;
     }

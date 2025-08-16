@@ -1,14 +1,16 @@
 #include "task.h"
 
-#include "memory.h"
 #include "heap.h"
+#include "memory.h"
 #include "paging.h"
 
 Task* firstTask;
 Task* CurrentTask;
 Task* lastTask;
 
-Task* TaskInit(void) {
+Task*
+TaskInit(void)
+{
     Task* task = (Task*)kzalloc(sizeof(Task));
 
     task->registers.eip = 0x400000;
@@ -18,8 +20,7 @@ Task* TaskInit(void) {
 
     task->pageDirectory = CreatePageDirectory(
         PAGING_PRESENT | PAGING_USER_SUPERVISOR | PAGING_READWRITE,
-        PAGING_PRESENT | PAGING_USER_SUPERVISOR
-    );
+        PAGING_PRESENT | PAGING_USER_SUPERVISOR);
 
     if (!firstTask) {
         firstTask = task;
@@ -34,7 +35,9 @@ Task* TaskInit(void) {
     return task;
 }
 
-void TaskFree(Task* task) {
+void
+TaskFree(Task* task)
+{
     FreePageDirectory(task->pageDirectory);
 
     if (task->prev) {
@@ -60,7 +63,9 @@ void TaskFree(Task* task) {
     kfree(task);
 }
 
-void SetCurrentTask(Task* task) {
+void
+SetCurrentTask(Task* task)
+{
     // TODO: Check if this should be here
     // SetSegmentRegistersToUser();
     SetPageDirectory(task->pageDirectory);
@@ -68,7 +73,9 @@ void SetCurrentTask(Task* task) {
     GoToUserMode(&task->registers);
 }
 
-int CopyPageFromTask(Task* task, void* dest, const void* va) {
+int
+CopyPageFromTask(Task* task, void* dest, const void* va)
+{
     void* buffer = kmalloc(4096);
     if (!buffer) {
         return -1;
@@ -91,7 +98,9 @@ int CopyPageFromTask(Task* task, void* dest, const void* va) {
     return 0;
 }
 
-uint32_t GetStackElement(Task* task, int index) {
+uint32_t
+GetStackElement(Task* task, int index)
+{
     uint32_t result = 0;
     uint32_t* stack = (uint32_t*)task->registers.esp;
 
