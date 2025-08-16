@@ -4,6 +4,7 @@
 #include "gdt.h"
 #include "heap.h"
 #include "idt.h"
+#include "keyboard.h"
 #include "paging.h"
 #include "process.h"
 #include "task.h"
@@ -28,4 +29,6 @@ kmain()
     };
     Process* process = ProcessInit(processImage, sizeof(processImage));
     SetCurrentTask(process->mainThread);
+
+    KeyboardInit();
 }
