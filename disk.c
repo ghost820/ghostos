@@ -12,8 +12,7 @@ ReadSector(uint32_t lba, uint8_t* buffer)
     PortOutByte(0x1f5, (lba >> 16) & 0xff);
     PortOutByte(0x1f7, 0x20);
 
-    while ((PortInByte(0x1f7) & 0x08) == 0)
-        ;
+    while ((PortInByte(0x1f7) & 0x08) == 0);
 
     uint16_t* buffer16 = (uint16_t*)buffer;
     for (int i = 0; i < 256; i++) {

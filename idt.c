@@ -4,6 +4,12 @@
 #include "paging.h"
 #include "task.h"
 
+/*
+    PortOutByte(0x20, 0x20):
+      * Needed only for PIC interrupts.
+      * Send to both PICs in case of slave.
+*/
+
 extern void int20h(void);
 extern void int21h(void);
 extern void int80h(void);

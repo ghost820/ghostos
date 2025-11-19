@@ -5,13 +5,14 @@
 #include "heap.h"
 #include "idt.h"
 #include "keyboard.h"
+#include "multiboot.h"
 #include "paging.h"
 #include "process.h"
 #include "task.h"
 #include "tss.h"
 
 void
-kmain()
+kmain(multiboot_info_t* mbd, uint32_t magic)
 {
     GDTInit();
     IDTInit();
