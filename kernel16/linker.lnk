@@ -1,0 +1,11 @@
+FORMAT RAW BIN
+OPTION
+       START=entry,
+       OFFSET=0,
+       NODEFAULTLIBS,
+       VERBOSE
+ORDER
+    CLNAME CODE
+        SEGMENT _ENTRY
+        SEGMENT _TEXT
+    CLNAME DATA

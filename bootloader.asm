@@ -1,14 +1,10 @@
 [bits 16]
-[org 0x7c00]
+[org 0x7c3e]
 
-BPB:
-    jmp short start
-    nop
-    times 33 db 0
+%include "constants.inc"
 
-start:
-    ; Set code segment
-    jmp 0x0000:_16
+; Set code segment
+jmp 0x0000:_16
 
 _16:
     cli
@@ -17,7 +13,7 @@ _16:
     mov ds, ax
     mov es, ax
     mov ss, ax
-    
+
     mov sp, 0x7c00
 
     ; Enable A20
@@ -25,23 +21,21 @@ _16:
     or al, 2
     out 0x92, al
 
-    lgdt [GDT_ADDR]
-
-    mov eax, cr0
-    or eax, 1
-    mov cr0, eax
-
-    jmp 0x08:_32
-
-[bits 32]
-_32:
     mov eax, 1
     mov ecx, 100
-    mov edi, 0x100000
+    mov edi, KERNEL16_ADDRESS
     call ata_read
 
-    jmp 0x08:0x100000
-    
+    jmp KERNEL16_SEGMENT:KERNEL16_OFFSET
+
+    ; lgdt [GDT_ADDR]
+
+    ; mov eax, cr0
+    ; or eax, 1
+    ; mov cr0, eax
+
+    ; jmp 0x08:_32
+
 ; eax - first sector
 ; ecx - number of sectors
 ; edi - destination address
@@ -84,41 +78,45 @@ ata_read:
         push ecx
         mov ecx, 256
         mov dx, 0x01f0
-        rep insw
+        a32 rep insw
         pop ecx
-    loop .loop
+    dec ecx
+    jnz .loop
 
     ret
 
-GDT:
-    ; Null descriptor
-    dd 0
-    dd 0
+; [bits 32]
+; _32:
+;     jmp 0x08:0x100000
 
-    ; Code descriptor
-    dw 0xffff
-    dw 0x0000
-    db 0x00
-    db 0x9a
-    db 11001111b
-    db 0x00
+; GDT:
+;     ; Null descriptor
+;     dd 0
+;     dd 0
 
-    ; Data descriptor
-    dw 0xffff
-    dw 0x0000
-    db 0x00
-    db 0x92
-    db 11001111b
-    db 0x00
-GDT_END:
+;     ; Code descriptor
+;     dw 0xffff
+;     dw 0x0000
+;     db 0x00
+;     db 0x9a
+;     db 11001111b
+;     db 0x00
 
-GDT_ADDR:
-    dw GDT_END - GDT - 1
-    dd GDT
+;     ; Data descriptor
+;     dw 0xffff
+;     dw 0x0000
+;     db 0x00
+;     db 0x92
+;     db 11001111b
+;     db 0x00
+; GDT_END:
 
-%if ($ - $$) > 510
-    %fatal "Bootloader code exceeds 512 bytes."
+; GDT_ADDR:
+;     dw GDT_END - GDT - 1
+;     dd GDT
+
+%if ($ - $$) > 448
+    %fatal "Bootloader code exceeds 448 bytes."
 %endif
 
-times 510 - ($ - $$) db 0
-dw 0xAA55
+times 448 - ($ - $$) db 0

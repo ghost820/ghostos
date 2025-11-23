@@ -1,3 +1,10 @@
+Kernel16 address: 0x20000 (0x2000:0)
+Kernel16 size: 51200 (100 sectors)
+
+Stack address after first push: 0x2FFFE (2000:FFFE)
+
+---
+
 Kernel address: 0x100000
 Kernel size: 512 (bootsector) + 51200 (100 sectors)
     - Bootloader (ata_read)
