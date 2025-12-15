@@ -1,0 +1,12 @@
+[package]
+name = "kernel64"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "kernel64"
+test = false
+bench = false
+
+[dependencies]
+bootloader = "0.9"
