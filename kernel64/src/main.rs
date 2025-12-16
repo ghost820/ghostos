@@ -3,7 +3,7 @@
 
 use core::panic::PanicInfo;
 
-// cargo.exe bootimage && qemu-system-x86_64 -drive format=raw,file=target/target/debug/bootimage-kernel64.bin
+mod vga_text_buffer;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
@@ -11,6 +11,7 @@ pub extern "C" fn _start() -> ! {
 }
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
     loop {}
 }

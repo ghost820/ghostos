@@ -5,8 +5,14 @@ edition = "2024"
 
 [[bin]]
 name = "kernel64"
-test = false
+test = true
 bench = false
 
 [dependencies]
 bootloader = "0.9"
+spin = "0.10"
+volatile = "0.2.6"
+
+[dependencies.lazy_static]
+version = "1.5.0"
+features = ["spin_no_std"]
