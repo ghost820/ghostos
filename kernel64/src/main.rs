@@ -5,14 +5,22 @@
 #![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
+
+use bootloader::{BootInfo, entry_point};
+
 use kernel64::println;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+entry_point!(kernel_main);
+
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    kernel64::init();
+
     #[cfg(test)]
     test_main();
 
-    loop {}
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 #[cfg(not(test))]
@@ -20,16 +28,13 @@ pub extern "C" fn _start() -> ! {
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
 
-    loop {}
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     kernel64::test_panic_handler(info)
-}
-
-#[test_case]
-fn trivial_assertion() {
-    assert_eq!(1, 1);
 }

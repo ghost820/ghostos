@@ -1,20 +1,33 @@
 #![no_std]
 #![cfg_attr(test, no_main)]
+#![feature(abi_x86_interrupt)]
 #![feature(custom_test_frameworks)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
 
+#[cfg(test)]
+use bootloader::{BootInfo, entry_point};
+
+pub mod gdt;
+pub mod interrupts;
+pub mod memory;
 pub mod uart;
 pub mod vga_text_buffer;
 
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+entry_point!(test_kernel_main);
+
+#[cfg(test)]
+fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
+    init();
+
     test_main();
 
-    loop {}
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 #[cfg(test)]
@@ -24,12 +37,21 @@ fn panic(info: &PanicInfo) -> ! {
 }
 
 pub fn test_panic_handler(info: &PanicInfo) -> ! {
-    serial_println!("[failed]\n");
+    serial_println!("[fail]\n");
     serial_println!("Error: {}\n", info);
 
     exit_qemu(QemuExitCode::Failure);
 
-    loop {}
+    loop {
+        x86_64::instructions::hlt();
+    }
+}
+
+pub fn init() {
+    gdt::init();
+    interrupts::init();
+
+    x86_64::instructions::interrupts::enable();
 }
 
 // Exit codes shound not overlap with QEMU's own exit codes
@@ -55,6 +77,7 @@ pub fn test_runner(tests: &[&dyn TestCase]) {
     for test in tests {
         test.run();
     }
+    serial_println!();
 
     exit_qemu(QemuExitCode::Success);
 }

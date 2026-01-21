@@ -10,7 +10,9 @@ use core::panic::PanicInfo;
 pub extern "C" fn _start() -> ! {
     test_main();
 
-    loop {}
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 #[panic_handler]
