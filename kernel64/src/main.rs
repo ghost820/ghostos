@@ -4,16 +4,27 @@
 #![test_runner(kernel64::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+extern crate alloc;
+
 use core::panic::PanicInfo;
 
 use bootloader::{BootInfo, entry_point};
+use x86_64::VirtAddr;
 
-use kernel64::println;
+use kernel64::{
+    memory::{self, PhysicalFrameAllocator},
+    println,
+};
 
 entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     kernel64::init();
+
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mut mapper = unsafe { memory::get_offset_page_table(phys_mem_offset) };
+    let mut frame_allocator = unsafe { PhysicalFrameAllocator::new(&boot_info.memory_map) };
+    memory::init(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
     #[cfg(test)]
     test_main();

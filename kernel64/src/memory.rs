@@ -1,7 +1,45 @@
 #![allow(clippy::missing_safety_doc)]
 
-use x86_64::structures::paging::{FrameAllocator, OffsetPageTable, PageTable, PhysFrame, Size4KiB};
+use linked_list_allocator::LockedHeap;
+use x86_64::structures::paging::mapper::MapToError;
+use x86_64::structures::paging::{
+    FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PageTableFlags, PhysFrame, Size4KiB,
+};
 use x86_64::{PhysAddr, VirtAddr};
+
+pub const HEAP_ADDR: usize = 0x_4444_4444_0000;
+pub const HEAP_SIZE: usize = 100 * 1024;
+
+#[global_allocator]
+static ALLOCATOR: LockedHeap = LockedHeap::empty();
+
+/// After init we can use Box, Rc, Vec, String etc.
+pub fn init(
+    mapper: &mut impl Mapper<Size4KiB>,
+    frame_allocator: &mut impl FrameAllocator<Size4KiB>,
+) -> Result<(), MapToError<Size4KiB>> {
+    let page_range = {
+        let heap_start = VirtAddr::new(HEAP_ADDR as u64);
+        let heap_end = heap_start + (HEAP_SIZE as u64) - 1;
+        let heap_start_page = Page::containing_address(heap_start);
+        let heap_end_page = Page::containing_address(heap_end);
+        Page::range_inclusive(heap_start_page, heap_end_page)
+    };
+
+    for page in page_range {
+        let frame = frame_allocator
+            .allocate_frame()
+            .ok_or(MapToError::FrameAllocationFailed)?;
+        let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+        unsafe { mapper.map_to(page, frame, flags, frame_allocator)?.flush() };
+    }
+
+    unsafe {
+        ALLOCATOR.lock().init(HEAP_ADDR, HEAP_SIZE);
+    }
+
+    Ok(())
+}
 
 /// Use OffsetPageTable.translate_addr() to translate a virtual address to a physical address.
 /// Use OffsetPageTable.map_to() + flush() to map a virtual page to a physical frame.
