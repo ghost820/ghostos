@@ -11,10 +11,10 @@ use core::panic::PanicInfo;
 use bootloader::{BootInfo, entry_point};
 use x86_64::VirtAddr;
 
-use kernel64::{
-    memory::{self, PhysicalFrameAllocator},
-    println,
-};
+use kernel64::memory::{self, PhysicalFrameAllocator};
+use kernel64::println;
+use kernel64::task::executor::Executor;
+use kernel64::task::{Task, task_keyboard};
 
 entry_point!(kernel_main);
 
@@ -29,9 +29,9 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
-    loop {
-        x86_64::instructions::hlt();
-    }
+    let mut executor = Executor::new();
+    executor.spawn(Task::new(task_keyboard::task()));
+    executor.run();
 }
 
 #[cfg(not(test))]
