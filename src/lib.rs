@@ -14,6 +14,7 @@ use bootloader::{BootInfo, entry_point};
 
 pub mod gdt;
 pub mod interrupts;
+pub mod io;
 pub mod memory;
 pub mod task;
 pub mod uart;
@@ -66,12 +67,10 @@ pub enum QemuExitCode {
 }
 
 pub fn exit_qemu(exit_code: QemuExitCode) {
-    use x86_64::instructions::port::Port;
+    use crate::io::{self, PortAddress, WriteOnly};
 
-    let mut port = Port::new(0xf4);
-    unsafe {
-        port.write(exit_code as u32);
-    }
+    const QEMU_EXIT_PORT: PortAddress<u32, WriteOnly> = unsafe { PortAddress::new(0xf4) };
+    io::write(QEMU_EXIT_PORT, exit_code as u32);
 }
 
 // &[&dyn Fn()]

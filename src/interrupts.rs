@@ -72,7 +72,7 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
     // use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
     // use spin::Mutex;
-    use x86_64::instructions::port::Port;
+    use crate::io::{self, PortAddress, ReadWrite};
 
     // lazy_static! {
     //     static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> =
@@ -83,10 +83,9 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     //         ));
     // }
 
-    let mut port = Port::new(0x60);
-    let scancode: u8 = unsafe { port.read() };
+    const KEYBOARD_DATA_PORT: PortAddress<u8, ReadWrite> = unsafe { PortAddress::new(0x60) };
 
-    task_keyboard::push_scancode(scancode);
+    task_keyboard::push_scancode(io::read(KEYBOARD_DATA_PORT));
 
     // let mut keyboard = KEYBOARD.lock();
     // if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
