@@ -34,6 +34,9 @@ macro_rules! info {
 macro_rules! warning {
     ($($arg:tt)+) => {{
         $crate::println!("[<yellow>warning</>] {}", format_args!($($arg)+));
+
+        #[cfg(debug_assertions)]
+        panic!("warning log triggered");
     }};
 }
 

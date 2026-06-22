@@ -11,6 +11,7 @@ use core::panic::PanicInfo;
 
 use bootloader::{BootInfo, entry_point};
 
+use kernel64::interrupts;
 use kernel64::memory::HEAP_SIZE;
 
 entry_point!(main);
@@ -25,6 +26,8 @@ fn main(boot_info: &'static BootInfo) -> ! {
     let mut mapper = unsafe { memory::get_offset_page_table(phys_mem_offset) };
     let mut frame_allocator = unsafe { PhysicalFrameAllocator::new(&boot_info.memory_map) };
     memory::init(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+
+    interrupts::enable();
 
     test_main();
 

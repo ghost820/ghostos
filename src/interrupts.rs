@@ -4,8 +4,8 @@ use spin::Mutex;
 use pic8259::ChainedPics;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
+use crate::drivers::ps2;
 use crate::println;
-use crate::task::task_keyboard;
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
@@ -19,6 +19,7 @@ lazy_static! {
         idt.page_fault.set_handler_fn(page_fault_handler);
         idt[32].set_handler_fn(timer_interrupt_handler);
         idt[33].set_handler_fn(keyboard_interrupt_handler);
+        idt[44].set_handler_fn(mouse_interrupt_handler);
         idt
     };
 }
@@ -29,6 +30,25 @@ pub fn init() {
     IDT.load();
 
     unsafe { PICS.lock().initialize() };
+}
+
+pub fn enable() {
+    x86_64::instructions::interrupts::enable();
+}
+
+pub fn enable_and_hlt() {
+    x86_64::instructions::interrupts::enable_and_hlt();
+}
+
+pub fn disable() {
+    x86_64::instructions::interrupts::disable();
+}
+
+pub fn without_interrupts<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    x86_64::instructions::interrupts::without_interrupts(f)
 }
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
@@ -70,35 +90,18 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    // use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
-    // use spin::Mutex;
-    use crate::io::{self, PortAddress, ReadWrite};
-
-    // lazy_static! {
-    //     static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> =
-    //         Mutex::new(Keyboard::new(
-    //             ScancodeSet1::new(),
-    //             layouts::Us104Key,
-    //             HandleControl::Ignore
-    //         ));
-    // }
-
-    const KEYBOARD_DATA_PORT: PortAddress<u8, ReadWrite> = unsafe { PortAddress::new(0x60) };
-
-    task_keyboard::push_scancode(io::read(KEYBOARD_DATA_PORT));
-
-    // let mut keyboard = KEYBOARD.lock();
-    // if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
-    //     && let Some(key) = keyboard.process_keyevent(key_event)
-    // {
-    //     match key {
-    //         DecodedKey::Unicode(c) => {}
-    //         DecodedKey::RawKey(key) => {}
-    //     }
-    // }
+    ps2::keyboard::push_scancode(ps2::controller::read_data_nowait());
 
     unsafe {
         PICS.lock().notify_end_of_interrupt(33);
+    }
+}
+
+extern "x86-interrupt" fn mouse_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    ps2::mouse::push_byte(ps2::controller::read_data_nowait());
+
+    unsafe {
+        PICS.lock().notify_end_of_interrupt(44);
     }
 }
 

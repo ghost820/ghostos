@@ -5,7 +5,6 @@ use core::task::{Context, Poll};
 
 pub mod executor;
 pub mod simple_executor;
-pub mod task_keyboard;
 
 pub struct Task {
     id: TaskId,

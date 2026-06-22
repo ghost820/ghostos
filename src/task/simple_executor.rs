@@ -1,4 +1,5 @@
 use alloc::collections::vec_deque::VecDeque;
+use core::ptr;
 use core::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 
 use super::Task;
@@ -30,6 +31,12 @@ impl SimpleExecutor {
     }
 }
 
+impl Default for SimpleExecutor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn dummy_waker() -> Waker {
     unsafe { Waker::from_raw(dummy_raw_waker()) }
 }
@@ -43,5 +50,5 @@ fn dummy_raw_waker() -> RawWaker {
 
     let vtable = &RawWakerVTable::new(clone, no_op, no_op, no_op);
 
-    RawWaker::new(0 as *const (), vtable)
+    RawWaker::new(ptr::null(), vtable)
 }

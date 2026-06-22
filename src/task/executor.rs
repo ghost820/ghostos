@@ -3,13 +3,14 @@ use alloc::sync::Arc;
 use alloc::task::Wake;
 use core::task::{Context, Poll, Waker};
 
-use crossbeam_queue::ArrayQueue;
-
 use super::{Task, TaskId};
+use crate::data_structures::concurrent_queue::ConcurrentQueue;
+
+type TaskQueue = Arc<ConcurrentQueue<TaskId, 256>>;
 
 pub struct Executor {
     tasks: BTreeMap<TaskId, Task>,
-    task_queue: Arc<ArrayQueue<TaskId>>,
+    task_queue: TaskQueue,
     waker_cache: BTreeMap<TaskId, Waker>,
 }
 
@@ -17,7 +18,7 @@ impl Executor {
     pub fn new() -> Executor {
         Executor {
             tasks: BTreeMap::new(),
-            task_queue: Arc::new(ArrayQueue::new(100)),
+            task_queue: Arc::new(ConcurrentQueue::new()),
             waker_cache: BTreeMap::new(),
         }
     }
@@ -27,7 +28,7 @@ impl Executor {
         if self.tasks.insert(task.id, task).is_some() {
             panic!("task with same ID already in tasks");
         }
-        self.task_queue.push(task_id).expect("task queue full");
+        self.task_queue.push_back(task_id).expect("task queue full");
     }
 
     pub fn run(&mut self) -> ! {
@@ -44,7 +45,7 @@ impl Executor {
             waker_cache,
         } = self;
 
-        while let Some(task_id) = task_queue.pop() {
+        while let Some(task_id) = task_queue.pop_front() {
             let task = match tasks.get_mut(&task_id) {
                 Some(task) => task,
                 None => continue,
@@ -64,7 +65,7 @@ impl Executor {
     }
 
     fn sleep_if_idle(&self) {
-        use x86_64::instructions::interrupts;
+        use crate::interrupts;
 
         interrupts::disable();
         if self.task_queue.is_empty() {
@@ -75,13 +76,20 @@ impl Executor {
     }
 }
 
+impl Default for Executor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 struct TaskWaker {
     task_id: TaskId,
-    task_queue: Arc<ArrayQueue<TaskId>>,
+    task_queue: TaskQueue,
 }
 
 impl TaskWaker {
-    fn new(task_id: TaskId, task_queue: Arc<ArrayQueue<TaskId>>) -> Waker {
+    #[allow(clippy::new_ret_no_self)]
+    fn new(task_id: TaskId, task_queue: TaskQueue) -> Waker {
         Waker::from(Arc::new(TaskWaker {
             task_id,
             task_queue,
@@ -89,7 +97,9 @@ impl TaskWaker {
     }
 
     fn wake_task(&self) {
-        self.task_queue.push(self.task_id).expect("task queue full");
+        self.task_queue
+            .push_back(self.task_id)
+            .expect("task queue full");
     }
 }
 

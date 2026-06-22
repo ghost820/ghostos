@@ -12,6 +12,8 @@ use core::panic::PanicInfo;
 #[cfg(test)]
 use bootloader::{BootInfo, entry_point};
 
+pub mod data_structures;
+pub mod drivers;
 pub mod gdt;
 pub mod interrupts;
 pub mod io;
@@ -54,8 +56,6 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 pub fn init() {
     gdt::init();
     interrupts::init();
-
-    x86_64::instructions::interrupts::enable();
 }
 
 // Exit codes shound not overlap with QEMU's own exit codes

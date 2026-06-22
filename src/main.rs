@@ -11,9 +11,12 @@ use core::panic::PanicInfo;
 use bootloader::{BootInfo, entry_point};
 use x86_64::VirtAddr;
 
+use kernel64::drivers;
+use kernel64::interrupts;
 use kernel64::memory::{self, PhysicalFrameAllocator};
+use kernel64::task::Task;
 use kernel64::task::executor::Executor;
-use kernel64::task::{Task, task_keyboard};
+#[allow(unused_imports)]
 use kernel64::{critical, debug, error, info, println, warning};
 
 entry_point!(kernel_main);
@@ -26,17 +29,30 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     let mut frame_allocator = unsafe { PhysicalFrameAllocator::new(&boot_info.memory_map) };
     memory::init(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
+    drivers::ps2::keyboard::init();
+
+    if let Err(error) = drivers::ps2::mouse::init() {
+        error!("Failed to initialize PS/2 mouse: {:?}", error);
+    }
+
     #[cfg(test)]
     test_main();
 
     let mut executor = Executor::new();
-    executor.spawn(Task::new(task_keyboard::task()));
+    executor.spawn(Task::new(drivers::ps2::keyboard::task()));
+    executor.spawn(Task::new(drivers::ps2::mouse::task()));
+
+    interrupts::enable();
+
+    info!("Kernel initialized, starting task executor...");
+
     executor.run();
 }
 
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
+    // TODO: Deadlock here
     println!("{}", info);
 
     loop {
