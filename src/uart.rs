@@ -27,7 +27,15 @@ macro_rules! serial_println {
 
 pub fn _print(args: ::core::fmt::Arguments) {
     use core::fmt::Write;
-    UART.lock()
-        .write_fmt(args)
-        .expect("Printing to uart failed");
+
+    let result = {
+        let mut uart = UART.lock();
+        uart.write_fmt(args)
+    };
+
+    #[cfg(debug_assertions)]
+    result.expect("failed to format text for UART output");
+
+    #[cfg(not(debug_assertions))]
+    let _ = result;
 }

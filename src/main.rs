@@ -12,9 +12,9 @@ use bootloader::{BootInfo, entry_point};
 use x86_64::VirtAddr;
 
 use kernel64::memory::{self, PhysicalFrameAllocator};
-use kernel64::println;
 use kernel64::task::executor::Executor;
 use kernel64::task::{Task, task_keyboard};
+use kernel64::{critical, debug, error, info, println, warning};
 
 entry_point!(kernel_main);
 
