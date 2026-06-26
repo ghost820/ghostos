@@ -19,6 +19,7 @@ pub mod interrupts;
 pub mod io;
 pub mod memory;
 pub mod task;
+pub mod threading;
 pub mod uart;
 pub mod vga_text_buffer;
 
