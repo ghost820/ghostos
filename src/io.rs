@@ -2,8 +2,11 @@ use core::marker::PhantomData;
 
 use x86_64::instructions::port::{Port, PortRead, PortWrite};
 
+#[derive(Clone, Copy)]
 pub struct ReadOnly;
+#[derive(Clone, Copy)]
 pub struct WriteOnly;
+#[derive(Clone, Copy)]
 pub struct ReadWrite;
 
 pub trait CanRead {}

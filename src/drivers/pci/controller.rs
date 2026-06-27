@@ -242,6 +242,7 @@ pub fn print_function(function: FunctionAddress) {
             function.function()
         );
 
+        #[allow(unreachable_code)]
         return;
     };
 

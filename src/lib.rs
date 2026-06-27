@@ -17,11 +17,12 @@ pub mod drivers;
 pub mod gdt;
 pub mod interrupts;
 pub mod io;
+pub mod libs;
 pub mod memory;
 pub mod task;
 pub mod threading;
 pub mod uart;
-pub mod vga_text_buffer;
+pub mod vga;
 
 #[cfg(test)]
 entry_point!(test_kernel_main);
