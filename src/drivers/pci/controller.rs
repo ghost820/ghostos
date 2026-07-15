@@ -198,38 +198,90 @@ impl FunctionAddress {
     }
 }
 
-pub fn enumerate() {
-    for bus in 0u8..=u8::MAX {
-        enumerate_bus(bus);
-    }
+pub struct PciIterator {
+    next: Option<FunctionAddress>,
+    function_limit: u8,
 }
 
-pub fn enumerate_bus(bus: u8) {
-    for device in 0u8..32 {
-        enumerate_device(bus, device);
-    }
-}
+impl PciIterator {
+    const DEVICES_PER_BUS: u8 = 32;
+    const FUNCTIONS_PER_DEVICE: u8 = 8;
 
-pub fn enumerate_device(bus: u8, device: u8) {
-    let function = FunctionAddress::new(bus, device, 0);
-
-    if get_vendor_id(function).is_none() {
-        return;
-    }
-
-    print_function(function);
-
-    let header_type = get_header_type(function);
-    if !header_type.is_multi_function() {
-        return;
-    }
-
-    for function in 1u8..8 {
-        let function = FunctionAddress::new(bus, device, function);
-
-        if get_vendor_id(function).is_some() {
-            print_function(function);
+    pub const fn new() -> Self {
+        Self {
+            next: Some(FunctionAddress::new(0, 0, 0)),
+            function_limit: 1,
         }
+    }
+
+    fn next_device(current: FunctionAddress) -> Option<FunctionAddress> {
+        if current.device() + 1 < Self::DEVICES_PER_BUS {
+            return Some(FunctionAddress::new(current.bus(), current.device() + 1, 0));
+        }
+
+        if current.bus() < u8::MAX {
+            return Some(FunctionAddress::new(current.bus() + 1, 0, 0));
+        }
+
+        None
+    }
+
+    fn advance(&mut self, current: FunctionAddress) {
+        let next_function = current.function() + 1;
+
+        self.next = if next_function < self.function_limit {
+            Some(FunctionAddress::new(
+                current.bus(),
+                current.device(),
+                next_function,
+            ))
+        } else {
+            Self::next_device(current)
+        };
+    }
+}
+
+impl Default for PciIterator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Iterator for PciIterator {
+    type Item = FunctionAddress;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let current = self.next?;
+            let present = get_vendor_id(current).is_some();
+
+            if current.function() == 0 {
+                if !present {
+                    self.next = Self::next_device(current);
+                    continue;
+                }
+
+                self.function_limit = if get_header_type(current).is_multi_function() {
+                    Self::FUNCTIONS_PER_DEVICE
+                } else {
+                    1
+                };
+            }
+
+            self.advance(current);
+
+            if present {
+                return Some(current);
+            }
+        }
+    }
+}
+
+impl core::iter::FusedIterator for PciIterator {}
+
+pub fn enumerate() {
+    for function in PciIterator::new() {
+        print_function(function);
     }
 }
 
