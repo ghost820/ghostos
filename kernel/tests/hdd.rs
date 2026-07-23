@@ -6,13 +6,13 @@
 
 use core::panic::PanicInfo;
 
-use bootloader::{BootInfo, entry_point};
+use bootloader_api::{BootInfo, entry_point};
 
 use kernel64::drivers::ata::{AtaDevice, ChannelId, DeviceId, Lba48};
 
 entry_point!(main);
 
-fn main(_boot_info: &'static BootInfo) -> ! {
+fn main(_boot_info: &'static mut BootInfo) -> ! {
     kernel64::init();
 
     test_main();

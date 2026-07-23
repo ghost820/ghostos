@@ -9,22 +9,35 @@ extern crate alloc;
 use alloc::{boxed::Box, vec::Vec};
 use core::panic::PanicInfo;
 
-use bootloader::{BootInfo, entry_point};
+use bootloader_api::{BootInfo, BootloaderConfig, entry_point};
 
 use kernel64::interrupts;
 use kernel64::memory::HEAP_SIZE;
 
-entry_point!(main);
+const BOOTLOADER_CONFIG: BootloaderConfig = {
+    use bootloader_api::config::Mapping;
 
-fn main(boot_info: &'static BootInfo) -> ! {
+    let mut config = BootloaderConfig::new_default();
+    config.mappings.physical_memory = Some(Mapping::Dynamic);
+    config
+};
+
+entry_point!(main, config = &BOOTLOADER_CONFIG);
+
+fn main(boot_info: &'static mut BootInfo) -> ! {
     use kernel64::memory::{self, PhysicalFrameAllocator};
     use x86_64::VirtAddr;
 
     kernel64::init();
 
-    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let phys_mem_offset = VirtAddr::new(
+        boot_info
+            .physical_memory_offset
+            .into_option()
+            .expect("physical memory mapping is unavailable"),
+    );
     let mut mapper = unsafe { memory::get_offset_page_table(phys_mem_offset) };
-    let mut frame_allocator = unsafe { PhysicalFrameAllocator::new(&boot_info.memory_map) };
+    let mut frame_allocator = unsafe { PhysicalFrameAllocator::new(&boot_info.memory_regions) };
     memory::init(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
     interrupts::enable();

@@ -2,10 +2,14 @@
 #![no_main]
 
 use core::panic::PanicInfo;
+
+use bootloader_api::{BootInfo, entry_point};
+
 use kernel64::{QemuExitCode, exit_qemu, serial_print, serial_println};
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+entry_point!(main);
+
+fn main(_boot_info: &'static mut BootInfo) -> ! {
     test();
 
     serial_println!("[fail]");

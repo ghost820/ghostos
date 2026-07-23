@@ -4,11 +4,13 @@
 
 use core::panic::PanicInfo;
 
+use bootloader_api::{BootInfo, entry_point};
 use lazy_static::lazy_static;
-
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 use kernel64::{QemuExitCode, exit_qemu, serial_print, serial_println};
+
+entry_point!(main);
 
 lazy_static! {
     static ref TEST_IDT: InterruptDescriptorTable = {
@@ -22,8 +24,7 @@ lazy_static! {
     };
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+fn main(_boot_info: &'static mut BootInfo) -> ! {
     serial_print!("\nstack_overflow... ");
 
     kernel64::gdt::init();

@@ -10,7 +10,7 @@ extern crate alloc;
 use core::panic::PanicInfo;
 
 #[cfg(test)]
-use bootloader::{BootInfo, entry_point};
+use bootloader_api::{BootInfo, entry_point};
 
 pub mod data_structures;
 pub mod drivers;
@@ -29,7 +29,7 @@ pub mod vga;
 entry_point!(test_kernel_main);
 
 #[cfg(test)]
-fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
+fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     init();
 
     test_main();

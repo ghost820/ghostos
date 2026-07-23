@@ -39,3 +39,20 @@ macro_rules! critical {
         panic!("critical log triggered");
     }};
 }
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => {
+        $crate::serial_print!($($arg)*);
+    };
+}
+
+#[macro_export]
+macro_rules! println {
+    () => {
+        $crate::serial_println!();
+    };
+    ($($arg:tt)*) => {
+        $crate::serial_println!($($arg)*);
+    };
+}

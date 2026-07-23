@@ -202,6 +202,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ghostos-test-runner"
+version = "0.1.0"
+dependencies = [
+ "bootloader",
+ "tempfile",
+]
+
+[[package]]
 name = "hash32"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

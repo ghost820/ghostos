@@ -1,4 +1,6 @@
 /target
+/kernel/target
+/test-runner/target
 *.log
 ata-test.img
 os.zip

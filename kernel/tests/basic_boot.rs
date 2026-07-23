@@ -6,8 +6,11 @@
 
 use core::panic::PanicInfo;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+use bootloader_api::{BootInfo, entry_point};
+
+entry_point!(main);
+
+fn main(_boot_info: &'static mut BootInfo) -> ! {
     test_main();
 
     loop {
