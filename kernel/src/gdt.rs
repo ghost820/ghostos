@@ -5,11 +5,17 @@ use x86_64::structures::gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector
 use x86_64::structures::tss::TaskStateSegment;
 
 lazy_static! {
-    static ref GDT: (GlobalDescriptorTable, SegmentSelector, SegmentSelector) = {
+    static ref GDT: (
+        GlobalDescriptorTable,
+        SegmentSelector,
+        SegmentSelector,
+        SegmentSelector,
+    ) = {
         let mut gdt = GlobalDescriptorTable::new();
         let code_selector = gdt.append(Descriptor::kernel_code_segment());
+        let data_selector = gdt.append(Descriptor::kernel_data_segment());
         let tss_selector = gdt.append(Descriptor::tss_segment(&TSS));
-        (gdt, code_selector, tss_selector)
+        (gdt, code_selector, data_selector, tss_selector)
     };
 }
 
@@ -28,12 +34,15 @@ lazy_static! {
 }
 
 pub fn init() {
-    use x86_64::instructions::segmentation::{CS, Segment};
+    use x86_64::instructions::segmentation::{CS, DS, ES, SS, Segment};
     use x86_64::instructions::tables::load_tss;
 
     GDT.0.load();
     unsafe {
         CS::set_reg(GDT.1);
-        load_tss(GDT.2);
+        DS::set_reg(GDT.2);
+        ES::set_reg(GDT.2);
+        SS::set_reg(GDT.2);
+        load_tss(GDT.3);
     }
 }

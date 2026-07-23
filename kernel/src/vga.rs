@@ -62,48 +62,6 @@ lazy_static! {
 static LOCK: Mutex<()> = Mutex::new(());
 
 #[macro_export]
-macro_rules! debug {
-    ($($arg:tt)+) => {{
-        $crate::println!("[<darkgray>debug</>] {}", format_args!($($arg)+));
-    }};
-}
-
-#[macro_export]
-macro_rules! info {
-    ($($arg:tt)+) => {{
-        $crate::println!("[<lightcyan>info</>] {}", format_args!($($arg)+));
-    }};
-}
-
-#[macro_export]
-macro_rules! warning {
-    ($($arg:tt)+) => {{
-        $crate::println!("[<yellow>warning</>] {}", format_args!($($arg)+));
-
-        #[cfg(debug_assertions)]
-        panic!("warning log triggered");
-    }};
-}
-
-#[macro_export]
-macro_rules! error {
-    ($($arg:tt)+) => {{
-        $crate::println!("[<lightred>error</>] {}", format_args!($($arg)+));
-
-        #[cfg(debug_assertions)]
-        panic!("error log triggered");
-    }};
-}
-
-#[macro_export]
-macro_rules! critical {
-    ($($arg:tt)+) => {{
-        $crate::println!("[<red>critical</>] {}", format_args!($($arg)+));
-        panic!("critical log triggered");
-    }};
-}
-
-#[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => ($crate::vga::_print(format_args!($($arg)*)));
 }

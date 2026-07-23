@@ -1,3 +1,4 @@
 /target
+*.log
 ata-test.img
 os.zip

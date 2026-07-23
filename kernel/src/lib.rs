@@ -18,6 +18,7 @@ pub mod gdt;
 pub mod interrupts;
 pub mod io;
 pub mod libs;
+pub mod logger;
 pub mod memory;
 pub mod task;
 pub mod threading;

@@ -1,5 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
+use bootloader_api::info::{MemoryRegionKind, MemoryRegions};
 use linked_list_allocator::LockedHeap;
 use x86_64::structures::paging::mapper::MapToError;
 use x86_64::structures::paging::{
@@ -57,31 +58,29 @@ pub unsafe fn get_offset_page_table(physical_memory_offset: VirtAddr) -> OffsetP
     unsafe { OffsetPageTable::new(&mut *page_table_ptr, physical_memory_offset) }
 }
 
-pub struct PhysicalFrameAllocator {
-    memory_map: &'static bootloader::bootinfo::MemoryMap,
+pub struct PhysicalFrameAllocator<'a> {
+    memory_regions: &'a MemoryRegions,
     next: usize,
 }
 
-impl PhysicalFrameAllocator {
-    pub unsafe fn new(memory_map: &'static bootloader::bootinfo::MemoryMap) -> Self {
+impl<'a> PhysicalFrameAllocator<'a> {
+    pub unsafe fn new(memory_regions: &'a MemoryRegions) -> Self {
         Self {
-            memory_map,
+            memory_regions,
             next: 0,
         }
     }
 
     fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {
-        use bootloader::bootinfo::MemoryRegionType;
-
-        let regions = self.memory_map.iter();
-        let usable_regions = regions.filter(|r| r.region_type == MemoryRegionType::Usable);
-        let addr_ranges = usable_regions.map(|r| r.range.start_addr()..r.range.end_addr());
+        let regions = self.memory_regions.iter();
+        let usable_regions = regions.filter(|r| r.kind == MemoryRegionKind::Usable);
+        let addr_ranges = usable_regions.map(|r| r.start..r.end);
         let frame_addresses = addr_ranges.flat_map(|r| r.step_by(4096));
         frame_addresses.map(|addr| PhysFrame::containing_address(PhysAddr::new(addr)))
     }
 }
 
-unsafe impl FrameAllocator<Size4KiB> for PhysicalFrameAllocator {
+unsafe impl FrameAllocator<Size4KiB> for PhysicalFrameAllocator<'_> {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
         let frame = self.usable_frames().nth(self.next);
         self.next += 1;
