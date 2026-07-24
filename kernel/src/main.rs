@@ -40,12 +40,26 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     );
     let mut mapper = unsafe { memory::get_offset_page_table(phys_mem_offset) };
     let mut frame_allocator = unsafe { PhysicalFrameAllocator::new(&boot_info.memory_regions) };
-    memory::init(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+    memory::init(&mut mapper, &mut frame_allocator, phys_mem_offset)
+        .expect("memory initialization failed");
 
     drivers::ps2::keyboard::init();
 
     if let Err(error) = drivers::ps2::mouse::init() {
         error!("Failed to initialize PS/2 mouse: {:?}", error);
+    }
+
+    match drivers::e1000::find() {
+        Some(function_addr) => {
+            info!("E1000 found at {:?}", function_addr);
+
+            match drivers::e1000::E1000::init(function_addr) {
+                Ok(e1000) => info!("E1000 initialized: {:?}", e1000),
+                // TODO: Error handling
+                Err(error) => error!("Failed to initialize E1000: {:?}", error),
+            }
+        }
+        None => warning!("E1000 not found"),
     }
 
     #[cfg(test)]

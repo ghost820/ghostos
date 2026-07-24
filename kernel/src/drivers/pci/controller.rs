@@ -1,4 +1,5 @@
 use spin::Mutex;
+use x86_64::PhysAddr;
 
 use crate::io::{self, PortAddress, ReadWrite};
 use crate::threading::with_lock_no_interrupts;
@@ -6,6 +7,14 @@ use crate::{info, warning};
 
 const ADDRESS_PORT: PortAddress<u32, ReadWrite> = unsafe { PortAddress::new(0xCF8) };
 const DATA_PORT: PortAddress<u32, ReadWrite> = unsafe { PortAddress::new(0xCFC) };
+
+fn data_port_u8(register: u8) -> PortAddress<u8, ReadWrite> {
+    unsafe { PortAddress::new(0xCFC + u16::from(register & 0x03)) }
+}
+
+fn data_port_u16(register: u8) -> PortAddress<u16, ReadWrite> {
+    unsafe { PortAddress::new(0xCFC + u16::from(register & 0x03)) }
+}
 
 const CONFIG_ENABLE: u32 = 1 << 31;
 const NO_VENDOR: u16 = 0xFFFF;
@@ -330,6 +339,111 @@ pub fn get_device_id(function: FunctionAddress) -> u16 {
     read_u16(function, 0x02)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CommandRegister(u16);
+
+impl CommandRegister {
+    const MEMORY_SPACE_ENABLE: u16 = 1 << 1;
+
+    pub const fn with_memory_space_enabled(mut self) -> Self {
+        self.0 |= Self::MEMORY_SPACE_ENABLE;
+        self
+    }
+
+    pub const fn from_raw(raw: u16) -> Self {
+        Self(raw)
+    }
+
+    pub const fn raw(self) -> u16 {
+        self.0
+    }
+
+    pub const fn memory_space_enabled(self) -> bool {
+        self.0 & Self::MEMORY_SPACE_ENABLE != 0
+    }
+}
+
+pub fn get_command(function: FunctionAddress) -> CommandRegister {
+    CommandRegister::from_raw(read_u16(function, 0x04))
+}
+
+pub fn set_command(function: FunctionAddress, command: CommandRegister) {
+    write_u16(function, 0x04, command.raw());
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BarIndex {
+    Bar0 = 0,
+    Bar1 = 1,
+    Bar2 = 2,
+    Bar3 = 3,
+    Bar4 = 4,
+    Bar5 = 5,
+}
+
+impl BarIndex {
+    pub const fn register_offset(self) -> u8 {
+        0x10 + (self as u8) * 4
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MemoryBar {
+    address: PhysAddr,
+    prefetchable: bool,
+}
+
+impl MemoryBar {
+    pub const fn address(self) -> PhysAddr {
+        self.address
+    }
+
+    pub const fn is_prefetchable(self) -> bool {
+        self.prefetchable
+    }
+}
+
+pub fn get_memory_bar(function_addr: FunctionAddress, index: BarIndex) -> Option<MemoryBar> {
+    const IO_SPACE: u32 = 1;
+    const TYPE_MASK: u32 = 0b11 << 1;
+    const TYPE_32_BIT: u32 = 0b00 << 1;
+    const TYPE_64_BIT: u32 = 0b10 << 1;
+    const PREFETCHABLE: u32 = 1 << 3;
+    const ADDRESS_MASK: u32 = !0xF;
+
+    let low = read_u32(function_addr, index.register_offset());
+
+    if low & IO_SPACE != 0 {
+        return None;
+    }
+
+    let low_address = (low & ADDRESS_MASK) as u64;
+
+    let address = match low & TYPE_MASK {
+        TYPE_32_BIT => low_address,
+        TYPE_64_BIT => {
+            if index == BarIndex::Bar5 {
+                return None;
+            }
+
+            let high = read_u32(function_addr, index.register_offset() + 4) as u64;
+
+            (high << 32) | low_address
+        }
+        _ => return None,
+    };
+
+    if address == 0 {
+        return None;
+    }
+
+    Some(MemoryBar {
+        address: PhysAddr::try_new(address).ok()?,
+        prefetchable: low & PREFETCHABLE != 0,
+    })
+}
+
 pub fn read_u8(function: FunctionAddress, register: u8) -> u8 {
     with_lock_no_interrupts(&LOCK, || {
         let value = io_read_u32(function, register);
@@ -358,12 +472,8 @@ pub fn read_u32(function: FunctionAddress, register: u8) -> u32 {
 
 pub fn write_u8(function: FunctionAddress, register: u8, value: u8) {
     with_lock_no_interrupts(&LOCK, || {
-        let shift = ((register & 0x03) as u32) * 8;
-        let mask = 0xFFu32 << shift;
-        let old_value = io_read_u32(function, register);
-        let new_value = (old_value & !mask) | ((value as u32) << shift);
-
-        io_write_u32(function, register, new_value);
+        io::write(ADDRESS_PORT, function.config_address(register));
+        io::write(data_port_u8(register), value);
     });
 }
 
@@ -371,12 +481,8 @@ pub fn write_u16(function: FunctionAddress, register: u8, value: u16) {
     assert!(register & 0x01 == 0, "unaligned PCI config u16 write");
 
     with_lock_no_interrupts(&LOCK, || {
-        let shift = ((register & 0x02) as u32) * 8;
-        let mask = 0xFFFFu32 << shift;
-        let old_value = io_read_u32(function, register);
-        let new_value = (old_value & !mask) | ((value as u32) << shift);
-
-        io_write_u32(function, register, new_value);
+        io::write(ADDRESS_PORT, function.config_address(register));
+        io::write(data_port_u16(register), value);
     });
 }
 

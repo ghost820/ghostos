@@ -38,7 +38,8 @@ fn main(boot_info: &'static mut BootInfo) -> ! {
     );
     let mut mapper = unsafe { memory::get_offset_page_table(phys_mem_offset) };
     let mut frame_allocator = unsafe { PhysicalFrameAllocator::new(&boot_info.memory_regions) };
-    memory::init(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+    memory::init(&mut mapper, &mut frame_allocator, phys_mem_offset)
+        .expect("memory initialization failed");
 
     interrupts::enable();
 

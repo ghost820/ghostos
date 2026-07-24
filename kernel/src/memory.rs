@@ -1,6 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use bootloader_api::info::{MemoryRegionKind, MemoryRegions};
+use conquer_once::spin::OnceCell;
 use linked_list_allocator::LockedHeap;
 use x86_64::structures::paging::mapper::MapToError;
 use x86_64::structures::paging::{
@@ -14,11 +15,18 @@ pub const HEAP_SIZE: usize = 100 * 1024;
 #[global_allocator]
 static ALLOCATOR: LockedHeap = LockedHeap::empty();
 
+static PHYSICAL_MEMORY_OFFSET: OnceCell<VirtAddr> = OnceCell::uninit();
+
 /// After init we can use Box, Rc, Vec, String etc.
 pub fn init(
     mapper: &mut impl Mapper<Size4KiB>,
     frame_allocator: &mut impl FrameAllocator<Size4KiB>,
+    physical_memory_offset: VirtAddr,
 ) -> Result<(), MapToError<Size4KiB>> {
+    PHYSICAL_MEMORY_OFFSET
+        .try_init_once(|| physical_memory_offset)
+        .expect("physical memory offset already initialized");
+
     let page_range = {
         let heap_start = VirtAddr::new(HEAP_ADDR as u64);
         let heap_end = heap_start + (HEAP_SIZE as u64) - 1;
@@ -40,6 +48,19 @@ pub fn init(
     }
 
     Ok(())
+}
+
+pub fn phys_to_virt(address: PhysAddr) -> VirtAddr {
+    let offset = *PHYSICAL_MEMORY_OFFSET
+        .try_get()
+        .expect("physical memory offset not initialized");
+
+    let address = offset
+        .as_u64()
+        .checked_add(address.as_u64())
+        .expect("physical to virtual address overflow");
+
+    VirtAddr::try_new(address).expect("non-canonical virtual address")
 }
 
 /// Use OffsetPageTable.translate_addr() to translate a virtual address to a physical address.

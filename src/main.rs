@@ -7,6 +7,10 @@ fn main() -> ExitCode {
             concat!("format=raw,file=", env!("IMAGE_PATH")),
             "-serial",
             "stdio",
+            "-device",
+            "e1000,netdev=net0",
+            "-netdev",
+            "user,id=net0",
         ])
         .status()
         .expect("failed to start QEMU");
