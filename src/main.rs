@@ -3,6 +3,10 @@ use std::process::{Command, ExitCode};
 fn main() -> ExitCode {
     let status = Command::new("qemu-system-x86_64")
         .args([
+            "-accel",
+            "kvm",
+            "-cpu",
+            "host,+invtsc",
             "-drive",
             concat!("format=raw,file=", env!("IMAGE_PATH")),
             "-serial",

@@ -61,13 +61,17 @@ lazy_static! {
 
 static LOCK: Mutex<()> = Mutex::new(());
 
-pub fn _print(args: fmt::Arguments) {
+pub fn _print(_args: fmt::Arguments) {
     use core::fmt::Write;
 
+    //
+    panic!("abandoned code, text buffer address needs to be adapted");
+    #[allow(unreachable_code)]
+    //
     let result = {
         let mut buffer = VGA_TEXT_BUFFER.lock();
         let mut writer = ColorWriter::new(&mut buffer);
-        let result = writer.write_fmt(args);
+        let result = writer.write_fmt(_args);
         writer.flush();
         result
     };
@@ -366,6 +370,10 @@ impl PixelFormat {
 pub fn set_mode_320x200x256() -> GraphicsMode {
     const PALETTE_START_INDEX: u8 = 16;
 
+    //
+    panic!("abandoned code, framebuffer address needs to be adapted");
+    #[allow(unreachable_code)]
+    //
     with_lock_no_interrupts(&LOCK, || {
         write_mode(&MODE_320X200X256);
 

@@ -12,20 +12,22 @@ use core::panic::PanicInfo;
 use bootloader_api::{BootInfo, BootloaderConfig, entry_point};
 
 use kernel64::interrupts;
-use kernel64::memory::HEAP_SIZE;
+use kernel64::memory::{HEAP_SIZE, KERNEL_SPACE_ADDR};
 
 const BOOTLOADER_CONFIG: BootloaderConfig = {
     use bootloader_api::config::Mapping;
 
     let mut config = BootloaderConfig::new_default();
     config.mappings.physical_memory = Some(Mapping::Dynamic);
+    config.mappings.dynamic_range_start = Some(KERNEL_SPACE_ADDR as u64);
+    config.mappings.dynamic_range_end = Some(0xffff_bfff_ffff_f000);
     config
 };
 
 entry_point!(main, config = &BOOTLOADER_CONFIG);
 
 fn main(boot_info: &'static mut BootInfo) -> ! {
-    use kernel64::memory::{self, PhysicalFrameAllocator};
+    use kernel64::memory;
     use x86_64::VirtAddr;
 
     kernel64::init();
@@ -36,10 +38,7 @@ fn main(boot_info: &'static mut BootInfo) -> ! {
             .into_option()
             .expect("physical memory mapping is unavailable"),
     );
-    let mut mapper = unsafe { memory::get_offset_page_table(phys_mem_offset) };
-    let mut frame_allocator = unsafe { PhysicalFrameAllocator::new(&boot_info.memory_regions) };
-    memory::init(&mut mapper, &mut frame_allocator, phys_mem_offset)
-        .expect("memory initialization failed");
+    memory::init(&boot_info.memory_regions, phys_mem_offset).expect("memory initialization failed");
 
     interrupts::enable();
 

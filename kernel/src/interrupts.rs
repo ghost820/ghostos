@@ -2,10 +2,14 @@ use lazy_static::lazy_static;
 use spin::Mutex;
 
 use pic8259::ChainedPics;
+use x86_64::PrivilegeLevel;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
 use crate::drivers::ps2;
 use crate::println;
+use crate::syscall;
+use crate::time;
+use ghostos_syscall::SYSCALL_INTERRUPT_VECTOR;
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
@@ -17,9 +21,17 @@ lazy_static! {
                 .set_stack_index(0);
         }
         idt.page_fault.set_handler_fn(page_fault_handler);
+        idt.invalid_opcode.set_handler_fn(invalid_opcode_handler);
+        idt.general_protection_fault
+            .set_handler_fn(general_protection_fault_handler);
         idt[32].set_handler_fn(timer_interrupt_handler);
         idt[33].set_handler_fn(keyboard_interrupt_handler);
         idt[44].set_handler_fn(mouse_interrupt_handler);
+        unsafe {
+            idt[SYSCALL_INTERRUPT_VECTOR]
+                .set_handler_addr(syscall::interrupt_entry())
+                .set_privilege_level(PrivilegeLevel::Ring3);
+        }
         idt
     };
 }
@@ -78,12 +90,28 @@ extern "x86-interrupt" fn page_fault_handler(
     }
 }
 
+extern "x86-interrupt" fn invalid_opcode_handler(stack_frame: InterruptStackFrame) {
+    panic!("invalid opcode\n{:#?}", stack_frame);
+}
+
+extern "x86-interrupt" fn general_protection_fault_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u64,
+) {
+    panic!(
+        "EXCEPTION: GENERAL PROTECTION FAULT\nError Code: {:#x}\n{:#?}",
+        error_code, stack_frame
+    );
+}
+
 //
 // Using print! in both the main code and interrupt handlers can cause deadlocks.
 // Heap allocation can cause deadlocks (lazy_static!).
 //
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    time::interrupt();
+
     unsafe {
         PICS.lock().notify_end_of_interrupt(32);
     }

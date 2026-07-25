@@ -1,0 +1,14 @@
+[workspace]
+resolver = "3"
+members = [
+    "build-support",
+    "libs/*",
+    "programs/*",
+]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+ghostos-userspace-build = { path = "build-support" }
+ghostos-syscall = { path = "libs/syscall" }

@@ -12,10 +12,11 @@ use bootloader_api::{BootInfo, BootloaderConfig, entry_point};
 use x86_64::VirtAddr;
 
 use kernel64::drivers;
-use kernel64::interrupts;
-use kernel64::memory::{self, PhysicalFrameAllocator};
-use kernel64::task::Task;
-use kernel64::task::executor::Executor;
+use kernel64::kernel_loop;
+use kernel64::memory::{self, KERNEL_SPACE_ADDR};
+use kernel64::userspace::loader::ExecutableImage;
+use kernel64::userspace::process::Process;
+use kernel64::userspace::scheduler;
 #[allow(unused_imports)]
 use kernel64::{critical, debug, error, info, println, warning};
 
@@ -24,6 +25,8 @@ const BOOTLOADER_CONFIG: BootloaderConfig = {
 
     let mut config = BootloaderConfig::new_default();
     config.mappings.physical_memory = Some(Mapping::Dynamic);
+    config.mappings.dynamic_range_start = Some(KERNEL_SPACE_ADDR as u64);
+    config.mappings.dynamic_range_end = Some(0xffff_bfff_ffff_f000);
     config
 };
 
@@ -38,10 +41,14 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
             .into_option()
             .expect("physical memory mapping is unavailable"),
     );
-    let mut mapper = unsafe { memory::get_offset_page_table(phys_mem_offset) };
-    let mut frame_allocator = unsafe { PhysicalFrameAllocator::new(&boot_info.memory_regions) };
-    memory::init(&mut mapper, &mut frame_allocator, phys_mem_offset)
-        .expect("memory initialization failed");
+    memory::init(&boot_info.memory_regions, phys_mem_offset).expect("memory initialization failed");
+
+    let framebuffer = boot_info
+        .framebuffer
+        .as_ref()
+        .expect("framebuffer is unavailable");
+
+    info!("{:?}", framebuffer.info());
 
     drivers::ps2::keyboard::init();
 
@@ -65,15 +72,20 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
-    let mut executor = Executor::new();
-    executor.spawn(Task::new(drivers::ps2::keyboard::task()));
-    executor.spawn(Task::new(drivers::ps2::mouse::task()));
+    let game = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../userspace/target/x86_64-ghostos/debug/game"
+    ));
 
-    interrupts::enable();
+    let executable = ExecutableImage::new(game).expect("failed to parse game executable");
 
-    info!("Kernel initialized, starting task executor...");
+    let process = Process::new(&executable, 0, framebuffer).expect("failed to create game process");
 
-    executor.run();
+    info!("Kernel initialized, starting main loop...");
+
+    scheduler::add(process).expect("process limit reached");
+
+    kernel_loop::run();
 }
 
 #[cfg(not(test))]

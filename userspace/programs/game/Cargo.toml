@@ -1,0 +1,16 @@
+[package]
+name = "game"
+version = "0.1.0"
+edition.workspace = true
+
+[[bin]]
+name = "game"
+path = "src/main.rs"
+test = false
+bench = false
+
+[dependencies]
+ghostos-syscall.workspace = true
+
+[build-dependencies]
+ghostos-userspace-build.workspace = true

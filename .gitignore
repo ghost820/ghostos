@@ -1,5 +1,6 @@
 /target
 /kernel/target
+/userspace/target
 /test-runner/target
 *.log
 ata-test.img
