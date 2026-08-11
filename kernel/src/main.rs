@@ -79,7 +79,8 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     let executable = ExecutableImage::new(game).expect("failed to parse game executable");
 
-    let process = Process::new(&executable, 0, framebuffer).expect("failed to create game process");
+    let process =
+        Process::new(&executable, 64_000_000, framebuffer).expect("failed to create game process");
 
     info!("Kernel initialized, starting main loop...");
 

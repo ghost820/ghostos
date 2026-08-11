@@ -3,6 +3,14 @@ name = "game"
 version = "0.1.0"
 edition.workspace = true
 
+[lints.clippy]
+identity_op = "allow"
+
+[lib]
+test = false
+bench = false
+doctest = false
+
 [[bin]]
 name = "game"
 path = "src/main.rs"
