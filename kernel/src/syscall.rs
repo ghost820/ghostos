@@ -3,6 +3,7 @@ use core::time::Duration;
 
 use x86_64::VirtAddr;
 
+use crate::drivers::ps2::{keyboard, mouse};
 use crate::time;
 use crate::userspace::context::UserContext;
 use ghostos_syscall::{SyscallNumber, UnknownSyscallNumber};
@@ -108,6 +109,21 @@ extern "C" fn syscall_interrupt_dispatch(frame: &mut UserContext) -> SyscallDisp
             frame.rax = time::now().as_nanos().min(u64::MAX as u128) as u64;
             SyscallDisposition::ReturnToUser
         }
+        Ok(SyscallNumber::InputState) => {
+            let [word0, word1] = keyboard::snapshot().words();
+
+            frame.rax = word0;
+            frame.rdx = word1;
+            frame.rcx = mouse::snapshot().word();
+
+            SyscallDisposition::ReturnToUser
+        }
+        Ok(SyscallNumber::DebugLogByte) => {
+            crate::serial_print!("{}", frame.rdi as u8 as char);
+
+            frame.rax = 0;
+            SyscallDisposition::ReturnToUser
+        }
         Err(number) => reject_unknown_syscall(number),
     }
 }
@@ -121,7 +137,7 @@ pub(crate) fn prepare_kernel_syscall(context: &mut UserContext) -> KernelSyscall
         Ok(SyscallNumber::SleepUntil) => {
             let deadline = Duration::from_nanos(context.rdi);
 
-            context.rax = 0;
+            context.rax = 1;
             KernelSyscall::SleepUntil(deadline)
         }
         _ => panic!("invalid kernel syscall"),

@@ -12,6 +12,8 @@ pub enum Command {
     ReadConfigurationByte = 0x20,
     WriteConfigurationByte = 0x60,
     EnableSecondPort = 0xA8,
+    DisableFirstPort = 0xAD,
+    EnableFirstPort = 0xAE,
     WriteToSecondPort = 0xD4,
 }
 
@@ -102,9 +104,24 @@ pub fn write_configuration_byte(config: ConfigurationByte) {
     write_data(config.raw());
 }
 
+pub fn enable_first_port() {
+    write_command(Command::EnableFirstPort);
+}
+
+pub fn disable_first_port() {
+    write_command(Command::DisableFirstPort);
+}
+
 pub fn enable_second_port() {
     write_command(Command::EnableSecondPort);
 
     let config = read_configuration_byte().with_second_port_enabled();
     write_configuration_byte(config);
+}
+
+pub fn drain_output_buffer() {
+    // TODO: Avoid waiting forever
+    while data_ready() {
+        read_data_nowait();
+    }
 }

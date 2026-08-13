@@ -43,7 +43,10 @@ pub extern "C" fn _start(framebuffer: *mut u8) -> ! {
         game::update_and_render(game_state, game_buffer);
 
         deadline += frame_time;
-        ghostos_syscall::sleep_until(deadline);
+        if !ghostos_syscall::sleep_until(deadline) {
+            #[cfg(debug_assertions)]
+            game::println!("Game: FPS drop");
+        }
 
         // TODO: Volatile?
         #[allow(static_mut_refs)]

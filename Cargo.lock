@@ -195,6 +195,9 @@ dependencies = [
 [[package]]
 name = "ghostos-syscall"
 version = "0.1.0"
+dependencies = [
+ "pc-keyboard",
+]
 
 [[package]]
 name = "ghostos-test-runner"

@@ -12,6 +12,7 @@ use bootloader_api::{BootInfo, BootloaderConfig, entry_point};
 use x86_64::VirtAddr;
 
 use kernel64::drivers;
+use kernel64::interrupts;
 use kernel64::kernel_loop;
 use kernel64::memory::{self, KERNEL_SPACE_ADDR};
 use kernel64::userspace::loader::ExecutableImage;
@@ -50,11 +51,14 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     info!("{:?}", framebuffer.info());
 
-    drivers::ps2::keyboard::init();
-
+    // TODO: This error handling is not correct
     if let Err(error) = drivers::ps2::mouse::init() {
         error!("Failed to initialize PS/2 mouse: {:?}", error);
     }
+
+    interrupts::init_pics();
+
+    drivers::ps2::keyboard::init();
 
     match drivers::e1000::find() {
         Some(function_addr) => {
@@ -80,7 +84,7 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     let executable = ExecutableImage::new(game).expect("failed to parse game executable");
 
     let process =
-        Process::new(&executable, 64_000_000, framebuffer).expect("failed to create game process");
+        Process::new(&executable, 1_000_000, framebuffer).expect("failed to create game process");
 
     info!("Kernel initialized, starting main loop...");
 

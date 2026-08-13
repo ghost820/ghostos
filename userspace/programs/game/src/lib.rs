@@ -72,3 +72,42 @@ pub fn update_and_render(state: &mut State, buffer: Framebuffer) {
         buffer.data[i + 2] = 255;
     }
 }
+
+//
+// TODO: Temporary debug
+//
+
+use core::fmt::{self, Write};
+
+struct DebugWriter;
+
+impl Write for DebugWriter {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        for byte in s.bytes() {
+            ghostos_syscall::debug_log_byte(byte);
+        }
+
+        Ok(())
+    }
+}
+
+pub fn _print(args: fmt::Arguments) {
+    DebugWriter.write_fmt(args).unwrap();
+}
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => {
+        $crate::_print(format_args!($($arg)*))
+    };
+}
+
+#[macro_export]
+macro_rules! println {
+    () => {
+        $crate::print!("\n")
+    };
+    ($($arg:tt)*) => {
+        $crate::print!("{}\n", format_args!($($arg)*))
+    };
+}

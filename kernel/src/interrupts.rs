@@ -26,7 +26,9 @@ lazy_static! {
             .set_handler_fn(general_protection_fault_handler);
         idt[32].set_handler_fn(timer_interrupt_handler);
         idt[33].set_handler_fn(keyboard_interrupt_handler);
+        idt[39].set_handler_fn(irq7_interrupt_handler);
         idt[44].set_handler_fn(mouse_interrupt_handler);
+        idt[47].set_handler_fn(irq15_interrupt_handler);
         unsafe {
             idt[SYSCALL_INTERRUPT_VECTOR]
                 .set_handler_addr(syscall::interrupt_entry())
@@ -40,8 +42,12 @@ pub static PICS: Mutex<ChainedPics> = Mutex::new(unsafe { ChainedPics::new(32, 4
 
 pub fn init() {
     IDT.load();
+}
 
-    unsafe { PICS.lock().initialize() };
+pub fn init_pics() {
+    unsafe {
+        PICS.lock().initialize();
+    }
 }
 
 pub fn enable() {
@@ -118,7 +124,7 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    ps2::keyboard::push_scancode(ps2::controller::read_data_nowait());
+    ps2::keyboard::handle_scancode(ps2::controller::read_data_nowait());
 
     unsafe {
         PICS.lock().notify_end_of_interrupt(33);
@@ -126,10 +132,51 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
 }
 
 extern "x86-interrupt" fn mouse_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    ps2::mouse::push_byte(ps2::controller::read_data_nowait());
+    ps2::mouse::handle_byte(ps2::controller::read_data_nowait());
 
     unsafe {
         PICS.lock().notify_end_of_interrupt(44);
+    }
+}
+
+use x86_64::instructions::port::Port;
+
+const MASTER_PIC_COMMAND_PORT: u16 = 0x20;
+const SLAVE_PIC_COMMAND_PORT: u16 = 0xA0;
+
+fn irq7_in_service(command_port: u16) -> bool {
+    const READ_ISR_COMMAND: u8 = 0x0B;
+    const IRQ7_IN_SERVICE: u8 = 1 << 7;
+
+    unsafe {
+        let mut port = Port::<u8>::new(command_port);
+
+        port.write(READ_ISR_COMMAND);
+        port.read() & IRQ7_IN_SERVICE != 0
+    }
+}
+
+fn notify_master_end_of_interrupt() {
+    unsafe {
+        Port::<u8>::new(MASTER_PIC_COMMAND_PORT).write(0x20);
+    }
+}
+
+extern "x86-interrupt" fn irq7_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    if irq7_in_service(MASTER_PIC_COMMAND_PORT) {
+        unsafe {
+            PICS.lock().notify_end_of_interrupt(39);
+        }
+    }
+}
+
+extern "x86-interrupt" fn irq15_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    if irq7_in_service(SLAVE_PIC_COMMAND_PORT) {
+        unsafe {
+            PICS.lock().notify_end_of_interrupt(47);
+        }
+    } else {
+        notify_master_end_of_interrupt();
     }
 }
 
