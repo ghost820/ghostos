@@ -140,6 +140,14 @@ pub fn phys_to_virt(address: PhysAddr) -> VirtAddr {
     VirtAddr::try_new(address).expect("non-canonical virtual address")
 }
 
+pub fn allocate_dma32_frame() -> Option<PhysFrame<Size4KiB>> {
+    const DMA32_PHYSICAL_LIMIT: u64 = 1 << 32;
+
+    memory_manager().with_frame_allocator(|allocator| {
+        allocator.allocate_zeroed_frame_below(DMA32_PHYSICAL_LIMIT)
+    })
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UserPage(Page<Size4KiB>);
 
@@ -589,6 +597,24 @@ impl PhysicalFrameAllocator {
 
     fn allocate_zeroed_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
         let frame = self.allocate_frame()?;
+        let address = phys_to_virt(frame.start_address());
+
+        unsafe {
+            ptr::write_bytes(address.as_mut_ptr::<u8>(), 0, 4096);
+        }
+
+        Some(frame)
+    }
+
+    fn allocate_zeroed_frame_below(&mut self, physical_limit: u64) -> Option<PhysFrame<Size4KiB>> {
+        let frame = self.usable_frames().nth(self.next)?;
+
+        if frame.start_address().as_u64() >= physical_limit {
+            return None;
+        }
+
+        self.next += 1;
+
         let address = phys_to_virt(frame.start_address());
 
         unsafe {

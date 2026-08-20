@@ -26,7 +26,11 @@ lazy_static! {
             .set_handler_fn(general_protection_fault_handler);
         idt[32].set_handler_fn(timer_interrupt_handler);
         idt[33].set_handler_fn(keyboard_interrupt_handler);
+        idt[37].set_handler_fn(pci_irq5_interrupt_handler);
         idt[39].set_handler_fn(irq7_interrupt_handler);
+        idt[41].set_handler_fn(pci_irq9_interrupt_handler);
+        idt[42].set_handler_fn(pci_irq10_interrupt_handler);
+        idt[43].set_handler_fn(pci_irq11_interrupt_handler);
         idt[44].set_handler_fn(mouse_interrupt_handler);
         idt[47].set_handler_fn(irq15_interrupt_handler);
         unsafe {
@@ -46,8 +50,32 @@ pub fn init() {
 
 pub fn init_pics() {
     unsafe {
-        PICS.lock().initialize();
+        let mut pics = PICS.lock();
+
+        pics.initialize();
+        pics.write_masks(0b1111_1000, 0b1110_1111);
     }
+}
+
+pub fn unmask_irq(irq: u8) {
+    assert!(irq < 16, "invalid PIC IRQ");
+
+    without_interrupts(|| {
+        let mut pics = PICS.lock();
+
+        let [mut primary_mask, mut secondary_mask] = unsafe { pics.read_masks() };
+
+        if irq < 8 {
+            primary_mask &= !(1 << irq);
+        } else {
+            primary_mask &= !(1 << 2);
+            secondary_mask &= !(1 << (irq - 8));
+        }
+
+        unsafe {
+            pics.write_masks(primary_mask, secondary_mask);
+        }
+    });
 }
 
 pub fn enable() {
@@ -67,6 +95,10 @@ where
     F: FnOnce() -> R,
 {
     x86_64::instructions::interrupts::without_interrupts(f)
+}
+
+pub fn are_enabled() -> bool {
+    x86_64::instructions::interrupts::are_enabled()
 }
 
 extern "x86-interrupt" fn breakpoint_handler(_stack_frame: InterruptStackFrame) {
@@ -136,6 +168,28 @@ extern "x86-interrupt" fn mouse_interrupt_handler(_stack_frame: InterruptStackFr
 
     unsafe {
         PICS.lock().notify_end_of_interrupt(44);
+    }
+}
+
+extern "x86-interrupt" fn pci_irq5_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    handle_pci_irq(5);
+}
+
+extern "x86-interrupt" fn pci_irq9_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    handle_pci_irq(9);
+}
+
+extern "x86-interrupt" fn pci_irq10_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    handle_pci_irq(10);
+}
+
+extern "x86-interrupt" fn pci_irq11_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    handle_pci_irq(11);
+}
+
+fn handle_pci_irq(irq: u8) {
+    unsafe {
+        PICS.lock().notify_end_of_interrupt(32 + irq);
     }
 }
 

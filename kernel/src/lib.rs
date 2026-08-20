@@ -14,6 +14,7 @@ use bootloader_api::{BootInfo, entry_point};
 
 pub mod cpu;
 pub mod data_structures;
+pub mod dma;
 pub mod drivers;
 pub mod gdt;
 pub mod interrupts;
@@ -22,6 +23,8 @@ pub mod kernel_loop;
 pub mod libs;
 pub mod logger;
 pub mod memory;
+pub mod mmio;
+pub mod net;
 pub mod syscall;
 pub mod task;
 pub mod threading;

@@ -1,6 +1,7 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 use core::time::Duration;
 
+use crate::interrupts;
 use crate::io::{self, PortAddress, ReadWrite, WriteOnly};
 
 pub const TIMER_FREQUENCY_HZ: u64 = 1_000;
@@ -36,6 +37,56 @@ pub fn now() -> Duration {
     let nanoseconds = pit_cycles % frequency * 1_000_000_000 / frequency;
 
     Duration::new(seconds as u64, nanoseconds as u32)
+}
+
+pub fn sleep(duration: Duration) {
+    let deadline = now()
+        .checked_add(duration)
+        .expect("sleep deadline overflow");
+
+    wait_until(deadline);
+}
+
+pub fn wait_until(deadline: Duration) {
+    assert!(
+        interrupts::are_enabled(),
+        "blocking wait requires interrupts to be enabled"
+    );
+
+    while now() < deadline {
+        interrupts::disable();
+
+        if now() >= deadline {
+            interrupts::enable();
+            break;
+        }
+
+        interrupts::enable_and_hlt();
+    }
+}
+
+pub fn poll_until(timeout: Duration, mut condition: impl FnMut() -> bool) -> bool {
+    assert!(
+        interrupts::are_enabled(),
+        "blocking poll requires interrupts to be enabled"
+    );
+
+    let deadline = now().checked_add(timeout).expect("poll deadline overflow");
+
+    loop {
+        if condition() {
+            return true;
+        }
+
+        interrupts::disable();
+
+        if now() >= deadline {
+            interrupts::enable();
+            return false;
+        }
+
+        interrupts::enable_and_hlt();
+    }
 }
 
 pub(crate) fn interrupt() {

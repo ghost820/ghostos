@@ -60,6 +60,8 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     drivers::ps2::keyboard::init();
 
+    interrupts::enable();
+
     match drivers::e1000::find() {
         Some(function_addr) => {
             info!("E1000 found at {:?}", function_addr);

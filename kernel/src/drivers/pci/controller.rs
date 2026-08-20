@@ -343,10 +343,22 @@ pub fn get_device_id(function: FunctionAddress) -> u16 {
 pub struct CommandRegister(u16);
 
 impl CommandRegister {
+    const IO_SPACE_ENABLE: u16 = 1 << 0;
     const MEMORY_SPACE_ENABLE: u16 = 1 << 1;
+    const BUS_MASTER_ENABLE: u16 = 1 << 2;
+
+    pub const fn with_io_space_enabled(mut self) -> Self {
+        self.0 |= Self::IO_SPACE_ENABLE;
+        self
+    }
 
     pub const fn with_memory_space_enabled(mut self) -> Self {
         self.0 |= Self::MEMORY_SPACE_ENABLE;
+        self
+    }
+
+    pub const fn with_bus_master_enabled(mut self) -> Self {
+        self.0 |= Self::BUS_MASTER_ENABLE;
         self
     }
 
@@ -358,8 +370,16 @@ impl CommandRegister {
         self.0
     }
 
+    pub const fn io_space_enabled(self) -> bool {
+        self.0 & Self::IO_SPACE_ENABLE != 0
+    }
+
     pub const fn memory_space_enabled(self) -> bool {
         self.0 & Self::MEMORY_SPACE_ENABLE != 0
+    }
+
+    pub const fn bus_master_enabled(self) -> bool {
+        self.0 & Self::BUS_MASTER_ENABLE != 0
     }
 }
 
@@ -389,8 +409,32 @@ impl BarIndex {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Bar {
+    Io(IoBar),
+    Memory(MemoryBar),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IoBar {
+    base: u16,
+}
+
+impl IoBar {
+    pub const fn base(self) -> u16 {
+        self.base
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MemoryBarWidth {
+    Bits32,
+    Bits64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MemoryBar {
     address: PhysAddr,
+    width: MemoryBarWidth,
     prefetchable: bool,
 }
 
@@ -399,37 +443,50 @@ impl MemoryBar {
         self.address
     }
 
+    pub const fn width(self) -> MemoryBarWidth {
+        self.width
+    }
+
     pub const fn is_prefetchable(self) -> bool {
         self.prefetchable
     }
 }
 
-pub fn get_memory_bar(function_addr: FunctionAddress, index: BarIndex) -> Option<MemoryBar> {
+pub fn get_bar(function_addr: FunctionAddress, index: BarIndex) -> Option<Bar> {
     const IO_SPACE: u32 = 1;
-    const TYPE_MASK: u32 = 0b11 << 1;
-    const TYPE_32_BIT: u32 = 0b00 << 1;
-    const TYPE_64_BIT: u32 = 0b10 << 1;
-    const PREFETCHABLE: u32 = 1 << 3;
-    const ADDRESS_MASK: u32 = !0xF;
+    const IO_ADDRESS_MASK: u32 = !0x3;
+    const MEMORY_TYPE_MASK: u32 = 0b11 << 1;
+    const MEMORY_TYPE_32_BIT: u32 = 0b00 << 1;
+    const MEMORY_TYPE_64_BIT: u32 = 0b10 << 1;
+    const MEMORY_PREFETCHABLE: u32 = 1 << 3;
+    const MEMORY_ADDRESS_MASK: u32 = !0xF;
 
     let low = read_u32(function_addr, index.register_offset());
 
     if low & IO_SPACE != 0 {
-        return None;
+        let address = low & IO_ADDRESS_MASK;
+
+        if address == 0 {
+            return None;
+        }
+
+        let base = u16::try_from(address).ok()?;
+
+        return Some(Bar::Io(IoBar { base }));
     }
 
-    let low_address = (low & ADDRESS_MASK) as u64;
+    let low_address = (low & MEMORY_ADDRESS_MASK) as u64;
 
-    let address = match low & TYPE_MASK {
-        TYPE_32_BIT => low_address,
-        TYPE_64_BIT => {
+    let (address, width) = match low & MEMORY_TYPE_MASK {
+        MEMORY_TYPE_32_BIT => (low_address, MemoryBarWidth::Bits32),
+        MEMORY_TYPE_64_BIT => {
             if index == BarIndex::Bar5 {
                 return None;
             }
 
             let high = read_u32(function_addr, index.register_offset() + 4) as u64;
 
-            (high << 32) | low_address
+            ((high << 32) | low_address, MemoryBarWidth::Bits64)
         }
         _ => return None,
     };
@@ -438,10 +495,41 @@ pub fn get_memory_bar(function_addr: FunctionAddress, index: BarIndex) -> Option
         return None;
     }
 
-    Some(MemoryBar {
+    Some(Bar::Memory(MemoryBar {
         address: PhysAddr::try_new(address).ok()?,
-        prefetchable: low & PREFETCHABLE != 0,
-    })
+        width,
+        prefetchable: low & MEMORY_PREFETCHABLE != 0,
+    }))
+}
+
+pub fn find_io_bar(function_addr: FunctionAddress) -> Option<IoBar> {
+    let indices = [
+        BarIndex::Bar0,
+        BarIndex::Bar1,
+        BarIndex::Bar2,
+        BarIndex::Bar3,
+        BarIndex::Bar4,
+        BarIndex::Bar5,
+    ];
+
+    let mut skip_next = false;
+
+    for index in indices {
+        if skip_next {
+            skip_next = false;
+            continue;
+        }
+
+        match get_bar(function_addr, index) {
+            Some(Bar::Io(bar)) => return Some(bar),
+            Some(Bar::Memory(bar)) => {
+                skip_next = bar.width() == MemoryBarWidth::Bits64;
+            }
+            None => {}
+        }
+    }
+
+    None
 }
 
 pub fn read_u8(function: FunctionAddress, register: u8) -> u8 {
