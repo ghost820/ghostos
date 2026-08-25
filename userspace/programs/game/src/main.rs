@@ -57,7 +57,9 @@ pub extern "C" fn _start(framebuffer: *mut u8) -> ! {
 }
 
 #[panic_handler]
-fn panic(_: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    game::println!("{}", info);
+
     loop {
         core::hint::spin_loop();
     }

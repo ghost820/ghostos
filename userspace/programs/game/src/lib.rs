@@ -1,5 +1,7 @@
 #![no_std]
 
+pub mod math;
+
 #[repr(C)]
 #[derive(Default)]
 pub struct State {}

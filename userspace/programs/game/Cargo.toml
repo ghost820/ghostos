@@ -18,6 +18,7 @@ test = false
 bench = false
 
 [dependencies]
+libm = "0.2"
 ghostos-syscall.workspace = true
 
 [build-dependencies]
