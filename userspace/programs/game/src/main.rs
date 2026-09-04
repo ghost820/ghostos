@@ -40,7 +40,7 @@ pub extern "C" fn _start(framebuffer: *mut u8) -> ! {
             unsafe { &mut BUFFER },
         );
 
-        game::update_and_render(game_state, game_buffer);
+        game::update_and_render(game_state, game_buffer, FRAME_TIME as f32);
 
         deadline += frame_time;
         if !ghostos_syscall::sleep_until(deadline) {

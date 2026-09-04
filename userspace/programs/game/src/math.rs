@@ -28,11 +28,17 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
+    pub const ZERO: Self = Self::new(0.0, 0.0);
+
     pub const fn new(x: f32, y: f32) -> Self {
         debug_assert!(x.is_finite());
         debug_assert!(y.is_finite());
 
         Self { x, y }
+    }
+
+    pub fn from_dir_mag(dir: Vec2, mag: f32) -> Self {
+        dir.normalized().scaled(mag)
     }
 
     pub const fn x(self) -> f32 {

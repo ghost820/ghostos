@@ -1,10 +1,21 @@
 #![no_std]
 
+pub mod color;
+pub mod draw;
 pub mod math;
+pub mod particle;
+pub mod physics;
+
+use crate::color::Rgba;
+use crate::draw::draw_rect;
+
+pub const PIXELS_PER_METER: usize = 50;
 
 #[repr(C)]
 #[derive(Default)]
-pub struct State {}
+pub struct State {
+    initialized: bool,
+}
 
 pub struct Framebuffer<'a> {
     width: usize,
@@ -48,31 +59,17 @@ impl<'a> Framebuffer<'a> {
     }
 }
 
-pub fn update_and_render(state: &mut State, buffer: Framebuffer) {
-    let f1 = buffer.size() / 3;
-    let f2 = buffer.size() * 2 / 3;
-    let f3 = buffer.size();
+pub fn update_and_render(state: &mut State, mut buffer: Framebuffer, dt: f32) {
+    if !state.initialized {
+        // ...
 
-    for i in 0..f1 {
-        let i = i * 3;
-        buffer.data[i + 0] = 255;
-        buffer.data[i + 1] = 0;
-        buffer.data[i + 2] = 0;
+        state.initialized = true;
     }
 
-    for i in f1..f2 {
-        let i = i * 3;
-        buffer.data[i + 0] = 0;
-        buffer.data[i + 1] = 255;
-        buffer.data[i + 2] = 0;
-    }
+    let bw = buffer.width();
+    let bh = buffer.height();
 
-    for i in f2..f3 {
-        let i = i * 3;
-        buffer.data[i + 0] = 0;
-        buffer.data[i + 1] = 0;
-        buffer.data[i + 2] = 255;
-    }
+    draw_rect(&mut buffer, 0, 0, bw, bh, Rgba::BLACK);
 }
 
 //
