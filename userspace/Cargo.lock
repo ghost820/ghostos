@@ -5,10 +5,18 @@ version = 4
 [[package]]
 name = "game"
 version = "0.1.0"
+source = "git+https://github.com/ghost820/game.git#1eef4cd5c533a6c625a60a8a598a00a0ef4a8ad8"
 dependencies = [
+ "libm",
+]
+
+[[package]]
+name = "ghostos-game"
+version = "0.1.0"
+dependencies = [
+ "game",
  "ghostos-syscall",
  "ghostos-userspace-build",
- "libm",
 ]
 
 [[package]]
